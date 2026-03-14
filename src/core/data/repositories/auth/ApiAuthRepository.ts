@@ -1,5 +1,7 @@
 import "dotenv/config";
-import { AuthRepository } from "../../domain/repositories/AuthRepository";
+
+import { User } from "@/core/domain/entities/user";
+import { AuthRepository } from "../../../domain/repositories/auth/AuthRepository";
 
 export class ApiAuthRepository implements AuthRepository {
   async login(email: string, password: string): Promise<boolean> {
@@ -15,5 +17,15 @@ export class ApiAuthRepository implements AuthRepository {
     }
 
     return true; // Login realizado com sucesso
+  }
+
+  async getMe(): Promise<User> {
+    const response = await fetch("/api/auth/me"); // Chama a nossa rota interna
+
+    if (!response.ok) {
+      throw new Error("Sessão expirada ou inválida");
+    }
+
+    return response.json();
   }
 }

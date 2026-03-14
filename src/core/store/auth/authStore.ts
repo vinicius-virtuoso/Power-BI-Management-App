@@ -1,9 +1,10 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 
 interface AuthState {
   isAuthenticated: boolean;
   setAuthenticated: (value: boolean) => void;
+  logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -11,10 +12,12 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       isAuthenticated: false,
       setAuthenticated: (value) => set({ isAuthenticated: value }),
+      logout: async () => {
+        await fetch("/api/auth/logout", { method: "POST" });
+        set({ isAuthenticated: false });
+        window.location.href = "/login";
+      },
     }),
-    {
-      name: "auth-storage", // nome da chave no localStorage
-      storage: createJSONStorage(() => localStorage),
-    },
+    { name: "auth-session" }, // Salva no LocalStorage
   ),
 );

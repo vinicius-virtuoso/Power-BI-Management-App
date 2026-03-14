@@ -8,6 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  // A página não tem lógica, ela apenas entrega a "Screen"
-  return <LoginScreen />;
+  return (
+    <main>
+      <LoginScreen />
+    </main>
+  );
 }
