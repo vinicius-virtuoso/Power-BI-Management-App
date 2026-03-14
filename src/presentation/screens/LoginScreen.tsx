@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuthStore } from "@/core/store/auth/authStore";
-import { useUsersMeStore } from "@/core/store/users/userMeStore";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -11,7 +10,6 @@ import { useLoginController } from "../hooks/useLoginController";
 export function LoginScreen() {
   const { handleLogin, isLoading, errorMessage } = useLoginController();
   const { isAuthenticated } = useAuthStore();
-  const { user } = useUsersMeStore();
   const router = useRouter();
 
   useEffect(() => {

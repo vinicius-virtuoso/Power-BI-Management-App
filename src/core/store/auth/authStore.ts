@@ -15,7 +15,6 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         await fetch("/api/auth/logout", { method: "POST" });
         set({ isAuthenticated: false });
-        window.location.href = "/login";
       },
     }),
     { name: "auth-session" }, // Salva no LocalStorage
