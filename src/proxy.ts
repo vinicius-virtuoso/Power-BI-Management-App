@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function proxy(request: NextRequest) {
-  // Busca o cookie que definimos na Route Handler de Login
   const token = request.cookies.get("session_token")?.value;
-  const isDashboard = request.nextUrl.pathname.startsWith("/dashboard");
+  const isLoginPage = request.nextUrl.pathname === "/login";
 
-  if (isDashboard && !token) {
+  // Se o usuário está no Login mas JÁ TEM TOKEN, manda direto pro Dashboard
+  if (isLoginPage && token) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // Se o usuário tenta acessar o Dashboard mas NÃO TEM TOKEN, manda pro Login
+  if (request.nextUrl.pathname.startsWith("/dashboard") && !token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
 }
 
-// Define em quais rotas o middleware deve rodar
+// Configura em quais rotas o middleware deve agir
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/login", "/dashboard/:path*"],
 };

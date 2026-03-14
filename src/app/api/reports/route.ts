@@ -10,7 +10,7 @@ export async function GET() {
   }
 
   try {
-    const response = await fetch(`${process.env.API_URL}/users/me`, {
+    const response = await fetch(`${process.env.API_URL}/reports`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`, // Aqui injetamos o JWT que está no cookie
