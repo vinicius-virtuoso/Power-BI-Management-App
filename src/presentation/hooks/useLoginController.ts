@@ -13,11 +13,9 @@ export function useLoginController() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // Seletores das Stores
   const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
   const setUser = useUsersMeStore((state) => state.setUser);
 
-  // Instâncias das camadas
   const repo = new ApiAuthRepository();
   const loginUseCase = new LoginUseCase(repo);
   const getProfileUseCase = new GetProfileUseCase(repo);
@@ -27,23 +25,15 @@ export function useLoginController() {
     setErrorMessage("");
 
     try {
-      // 1. Executa o Login (O servidor do Next vai salvar o Cookie via Route Handler)
       const success = await loginUseCase.execute(data.email, data.password);
 
       if (success) {
-        // 2. Imediatamente busca as informações do usuário logado
-        // Como o Cookie 'session_token' já está no navegador, o fetch para /api/auth/me o enviará
         const userData = await getProfileUseCase.execute();
-
-        // 3. Atualiza as stores separadas
         setUser(userData);
         setAuthenticated(true);
-
-        // 4. Redireciona para o dashboard
         router.push("/dashboard");
       }
     } catch (e: any) {
-      // Se o login falhar ou o /me der erro, capturamos aqui
       setErrorMessage(e.message || "Erro ao realizar autenticação");
     } finally {
       setIsLoading(false);

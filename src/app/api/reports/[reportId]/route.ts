@@ -1,7 +1,14 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(
+  request: Request,
+  // Mudamos a tipagem para refletir que params é uma Promise
+  { params }: { params: Promise<{ reportId: string }> },
+) {
+  // 1. O segredo está aqui: você PRECISA dar await no params
+  const { reportId } = await params;
+
   const cookieStore = await cookies();
   const token = cookieStore.get("session_token")?.value;
 
@@ -10,7 +17,7 @@ export async function GET() {
   }
 
   try {
-    const response = await fetch(`${process.env.API_URL}/reports`, {
+    const response = await fetch(`${process.env.API_URL}/reports/${reportId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -18,15 +25,14 @@ export async function GET() {
       },
     });
 
-    const data = await response.json();
-
-    if (response.status === 401) {
+    if (!response.ok) {
       return NextResponse.json(
-        { message: "Sessão expirada ou inválida" },
+        { message: "Erro ao buscar relatório na API externa" },
         { status: response.status },
       );
     }
 
+    const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(

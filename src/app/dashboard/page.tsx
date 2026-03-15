@@ -7,10 +7,10 @@ export default async function DashboardPage() {
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
   return (
-    <main className="p-4 h-screen max-h-screen">
-      <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider defaultOpen={defaultOpen}>
+      <main className="h-screen max-h-screen w-full">
         <DashboardScreen />
-      </SidebarProvider>
-    </main>
+      </main>
+    </SidebarProvider>
   );
 }
