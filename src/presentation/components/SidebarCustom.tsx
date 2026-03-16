@@ -1,7 +1,7 @@
 "use client";
 
-import { useUsersMeStore } from "@/core/store/users/userMeStore";
-import { cn } from "@/lib/utils";
+import { useUserMeStore } from "@/core/store/users/userMeStore";
+import { cn } from "@/shared/utils";
 import { BarChart3, Loader2, Search } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
 import { ReportData } from "../screens/DashboardScreen";
@@ -39,7 +39,7 @@ export function SidebarCustom({
   isLoadingReports,
   toggleFavorite,
 }: SidebarCustomProps) {
-  const { user } = useUsersMeStore();
+  const { user } = useUserMeStore();
 
   return (
     <Sidebar

@@ -17,10 +17,9 @@ import { useForm } from "react-hook-form";
 
 import { useAuthStore } from "@/core/store/auth/authStore";
 import { useReportsStore } from "@/core/store/reports/reportsStore";
-import { useUsersMeStore } from "@/core/store/users/userMeStore";
-import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner"; // Importação do Toast
+import { useUserMeStore } from "@/core/store/users/userMeStore";
+import { cn } from "@/shared/utils";
+import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "./ui/button";
 import {
@@ -49,6 +48,8 @@ import {
   useSidebar,
 } from "./ui/sidebar";
 
+import { useUpdateUser } from "../hooks/useUpdateUser";
+
 type ProfileFormData = {
   name: string;
   email: string;
@@ -63,12 +64,19 @@ interface NavUserProps {
 export function NavUser({ isCollapsed }: NavUserProps) {
   const { isMobile } = useSidebar();
   const { setAuthenticated } = useAuthStore();
-  const { user, clearUser } = useUsersMeStore();
+  const { user, clearUser } = useUserMeStore();
   const { clearReports } = useReportsStore();
   const router = useRouter();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role.toLowerCase() === "admin";
+
+  const { updateUser, isUpdating } = useUpdateUser();
+
+  const pathname = usePathname();
+  const isUserManagementActive = pathname === "/dashboard/users-management";
+  const isReportsManagementActive =
+    pathname === "/dashboard/reports-management";
 
   const {
     register,
@@ -101,19 +109,19 @@ export function NavUser({ isCollapsed }: NavUserProps) {
 
   const onUpdateProfile = async (data: ProfileFormData) => {
     try {
-      const { confirmPassword, ...payload } = data;
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // O hook já trata o toast e a atualização da store interna
+      if (user) {
+        await updateUser(user.id, {
+          name: data.name,
+          email: data.email,
+          password: data.password,
+        });
 
-      toast.success("Perfil atualizado com sucesso!", {
-        description: "As suas novas informações foram guardadas.",
-      });
-
-      setIsProfileOpen(false);
-      reset();
-    } catch (error) {
-      toast.error("Erro ao atualizar perfil", {
-        description: "Ocorreu um problema ao tentar guardar as alterações.",
-      });
+        setIsProfileOpen(false);
+        reset(data);
+      }
+    } catch {
+      // Erro já tratado pelo toast dentro do hook
     }
   };
 
@@ -180,14 +188,34 @@ export function NavUser({ isCollapsed }: NavUserProps) {
                   <UserPen className="mr-2 size-4" />
                   Conta
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                  <Users className="mr-2 size-4" />
-                  Usuários
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                  <Proportions className="mr-2 size-4" />
-                  Relatórios
-                </DropdownMenuItem>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuItem
+                      className={cn(
+                        "cursor-pointer",
+                        isUserManagementActive && "bg-primary/10 text-primary",
+                      )}
+                      onClick={() => router.push("/dashboard/users-management")}
+                    >
+                      <Users className="mr-2 size-4" />
+                      Usuários
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      className={cn(
+                        "cursor-pointer",
+                        isReportsManagementActive &&
+                          "bg-primary/10 text-primary",
+                      )}
+                      onClick={() =>
+                        router.push("/dashboard/reports-management")
+                      }
+                    >
+                      <Proportions className="mr-2 size-4" />
+                      Relatórios
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -326,10 +354,10 @@ export function NavUser({ isCollapsed }: NavUserProps) {
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isUpdating}
                 className="min-w-[120px]"
               >
-                {isSubmitting ? (
+                {isUpdating ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>

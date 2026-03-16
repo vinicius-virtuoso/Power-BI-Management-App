@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/presentation/components/ui/tooltip";
+import { cn } from "@/shared/utils";
 import { Geist } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -15,7 +15,7 @@ export default function RootLayout({
     <html lang="pt-br" className={cn("font-sans", geist.variable)}>
       <body>
         <TooltipProvider>
-          <main>{children}</main>
+          <main className="overflow-hidden">{children}</main>
           <Toaster position="top-right" richColors closeButton />
         </TooltipProvider>
       </body>

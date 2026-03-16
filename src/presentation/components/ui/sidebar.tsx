@@ -4,7 +4,6 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { Slot } from "radix-ui";
 import * as React from "react";
 
-import { cn } from "@/lib/utils";
 import { Input } from "@/presentation/components/ui/input";
 import { Separator } from "@/presentation/components/ui/separator";
 import {
@@ -21,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/presentation/components/ui/tooltip";
 import { useIsMobile } from "@/presentation/hooks/useMobile";
+import { cn } from "@/shared/utils";
 import { PanelLeftIcon } from "lucide-react";
 import { Button } from "./button";
 

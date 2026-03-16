@@ -1,16 +1,13 @@
 "use client";
 
-import { ApiAuthRepository } from "@/core/data/repositories/auth/ApiAuthRepository";
-import { ApiReportsRepository } from "@/core/data/repositories/reports/ApiReportsRepository";
 import { ReportProps } from "@/core/domain/entities/report";
-import { GetAllReportsUseCase } from "@/core/domain/use-cases/GetAllReportsUseCase";
-import { GetProfileUseCase } from "@/core/domain/use-cases/GetProfileUseCase";
 import { useAuthStore } from "@/core/store/auth/authStore";
 import { useReportsStore } from "@/core/store/reports/reportsStore";
-import { useUsersMeStore } from "@/core/store/users/userMeStore";
+import { useUserMeStore } from "@/core/store/users/userMeStore";
+import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReportViewer from "../components/ReportViewer";
 import { SidebarCustom } from "../components/SidebarCustom";
 import { useSidebar } from "../components/ui/sidebar";
@@ -24,11 +21,30 @@ export type ReportData = {
   thumbnailColor: string;
 };
 
+// Funções utilitárias movidas para fora para evitar re-instanciação
+function nameToColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++)
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return `${hue} 60% 50%`;
+}
+
+function apiToReport(r: ReportProps, favId: string | null): ReportData {
+  return {
+    id: r.id,
+    title: r.name,
+    lastUpdated: r.lastUpdate ?? "",
+    isFavorite: r.id === favId,
+    embedUrl: r.embedUrl,
+    thumbnailColor: nameToColor(r.name),
+  };
+}
+
 export function DashboardScreen() {
   const { setAuthenticated } = useAuthStore();
-  const { setUser, clearUser } = useUsersMeStore();
-  const { reportsList, setReports, clearReports, isLoadingReports } =
-    useReportsStore();
+  const { fetchUserMe } = useUserMeStore();
+  const { reportsList, isLoadingReports, fetchReports } = useReportsStore();
   const [isLoaded, setIsLoaded] = useState(false);
   const router = useRouter();
   const { state } = useSidebar();
@@ -37,28 +53,12 @@ export function DashboardScreen() {
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
+  // Cadeado para evitar o double-mount do React 18 Strict Mode
+  const isInitialMount = useRef(true);
+
   const currentReport = useMemo(() => {
     return reportsList?.reports?.find((r) => r.id === selectedReportId) ?? null;
   }, [reportsList, selectedReportId]);
-
-  function nameToColor(name: string): string {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++)
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    const hue = Math.abs(hash) % 360;
-    return `${hue} 60% 50%`;
-  }
-
-  function apiToReport(r: ReportProps, favId: string | null): ReportData {
-    return {
-      id: r.id,
-      title: r.name,
-      lastUpdated: r.lastUpdate ?? "",
-      isFavorite: r.id === favId,
-      embedUrl: r.embedUrl,
-      thumbnailColor: nameToColor(r.name),
-    };
-  }
 
   const reportsAll = useMemo(() => {
     const list = Array.isArray(reportsList?.reports) ? reportsList.reports : [];
@@ -77,32 +77,32 @@ export function DashboardScreen() {
       });
   }, [reportsAll, search]);
 
+  // Inicialização Única
   useEffect(() => {
-    const fav = localStorage.getItem("favorite_report_id");
-    setFavoriteId(fav);
+    if (!isInitialMount.current) return;
+    isInitialMount.current = false;
 
-    const loadDashboardData = async () => {
+    const init = async () => {
       try {
-        const authRepo = new ApiAuthRepository();
-        const reportsRepo = new ApiReportsRepository();
-        const [userData, reportData] = await Promise.all([
-          new GetProfileUseCase(authRepo).execute(),
-          new GetAllReportsUseCase(reportsRepo).execute(),
-        ]);
-        setUser(userData);
-        setReports(reportData);
+        const fav = localStorage.getItem("favorite_report_id");
+        setFavoriteId(fav);
+
+        // Chamadas paralelas com trava na store
+        await Promise.all([fetchUserMe(), fetchReports()]);
+
         setAuthenticated(true);
       } catch (error) {
-        setAuthenticated(false);
+        console.error("Erro na inicialização:", error);
         router.push("/login");
       } finally {
         setIsLoaded(true);
       }
     };
-    loadDashboardData();
-  }, []);
 
-  // Seleção automática após carregar a lista
+    init();
+  }, [fetchUserMe, fetchReports, setAuthenticated, router]);
+
+  // Seleção automática do relatório
   useEffect(() => {
     if (reportsAll.length > 0 && !selectedReportId) {
       const storedFavId = localStorage.getItem("favorite_report_id");
@@ -118,32 +118,52 @@ export function DashboardScreen() {
     else localStorage.removeItem("favorite_report_id");
   };
 
-  if (!isLoaded) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
-    <section className="flex gap-2 h-full w-full">
-      <SidebarCustom
-        selectedId={selectedReportId}
-        onSelect={(id) => setSelectedReportId(id)}
-        filteredReports={filteredReports}
-        isCollapsed={isCollapsed}
-        isLoadingReports={isLoadingReports}
-        search={search}
-        setSearch={setSearch}
-        toggleFavorite={toggleFavorite}
-      />
-      <div className="flex flex-1 shadow-md rounded-md w-full h-full">
-        <ReportViewer
-          report={currentReport}
-          isFavorite={currentReport?.id === favoriteId}
-        />
+    <AnimatePresence mode="wait">
+      <div className="h-screen w-full bg-background overflow-hidden">
+        {!isLoaded ? (
+          <motion.div
+            key="dashboard-loader"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="h-full w-full flex items-center justify-center"
+          >
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="animate-spin text-primary w-10 h-10" />
+              <span className="text-xs text-muted-foreground uppercase tracking-tighter">
+                Carregando Dashboard...
+              </span>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.section
+            key="dashboard-content"
+            initial={{ opacity: 0, scale: 0.99 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="flex gap-2 h-full w-full p-2"
+          >
+            <SidebarCustom
+              selectedId={selectedReportId}
+              onSelect={(id) => setSelectedReportId(id)}
+              filteredReports={filteredReports}
+              isCollapsed={isCollapsed}
+              isLoadingReports={isLoadingReports}
+              search={search}
+              setSearch={setSearch}
+              toggleFavorite={toggleFavorite}
+            />
+            <div className="flex flex-1 shadow-md rounded-md w-full h-full overflow-hidden">
+              <ReportViewer
+                report={currentReport}
+                isFavorite={currentReport?.id === favoriteId}
+              />
+            </div>
+          </motion.section>
+        )}
       </div>
-    </section>
+    </AnimatePresence>
   );
 }

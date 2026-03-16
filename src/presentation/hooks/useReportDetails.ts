@@ -1,76 +1,48 @@
-import { ApiReportsRepository } from "@/core/data/repositories/reports/ApiReportsRepository";
-import { ReportProps } from "@/core/domain/entities/report";
-import { GetReportByIdUseCase } from "@/core/domain/use-cases/GetReportByIdUseCase";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useReportsStore } from "@/core/store/reports/reportsStore";
+import { useCallback, useEffect, useRef } from "react";
 
-export function useReportDetails() {
-  const [report, setReport] = useState<ReportProps | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function useReportDetails(reportId?: string) {
+  const { reportDetails, isLoadingDetails, fetchReportDetails } =
+    useReportsStore();
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const currentReportIdRef = useRef<string | null>(null);
 
-  const repository = new ApiReportsRepository();
-  const getReportByIdUseCase = new GetReportByIdUseCase(repository);
+  // 1. Pegamos o relatório do cache global
+  const report = reportId ? reportDetails[reportId] : null;
 
+  // 2. Ajuste na função loadReport
   const loadReport = useCallback(
-    async (reportId: string, isRefresh = false) => {
-      if (!reportId) return;
+    async (id: string, isRefresh = false) => {
+      if (!id) return;
 
-      // PROTEÇÃO 1: Se já carregamos ESSE ID e temos os dados, ignora
-      if (!isRefresh && currentReportIdRef.current === reportId && report)
-        return;
+      // Chama a store (que já tem a trava de isLoading e Cache)
+      await fetchReportDetails(id);
 
-      // PROTEÇÃO 2: Se já existe uma requisição VOANDO para esse mesmo ID, bloqueia a segunda
-      if (isLoading && currentReportIdRef.current === reportId) return;
-
+      // Gerencia o Refresh do Token (Power BI expira)
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 
-      try {
-        if (!isRefresh) setIsLoading(true);
-        setError(null);
-
-        // PROTEÇÃO 3: Marcamos o ID atual antes do await para bloquear disparos simultâneos
-        currentReportIdRef.current = reportId;
-
-        const data = await getReportByIdUseCase.execute(reportId);
-
-        setReport(data);
-
-        refreshTimerRef.current = setTimeout(
-          () => {
-            loadReport(reportId, true);
-          },
-          50 * 60 * 1000,
-        );
-      } catch (err: any) {
-        // Se der erro, limpamos a ref para permitir tentar carregar de novo
-        currentReportIdRef.current = null;
-        setError(err.message || "Erro ao carregar");
-      } finally {
-        setIsLoading(false);
-      }
+      refreshTimerRef.current = setTimeout(
+        () => {
+          // Usamos uma chamada recursiva simples aqui
+          loadReport(id, true);
+        },
+        50 * 60 * 1000,
+      ); // 50 min
     },
-    [report, isLoading], // Agora precisamos dessas dependências para as proteções lerem os valores atuais
+    [fetchReportDetails], // Dependência estável da store
   );
 
+  // 3. Limpeza ao desmontar
   useEffect(() => {
     return () => {
-      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
     };
   }, []);
 
-  const clearReport = () => {
-    currentReportIdRef.current = null;
-    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-    setReport(null);
-  };
-
   return {
     report,
-    isLoading,
-    error,
+    isLoading: isLoadingDetails,
     loadReport,
-    clearReport,
   };
 }
