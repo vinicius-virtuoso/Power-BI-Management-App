@@ -1,11 +1,13 @@
 "use client";
 
-import { LoginFormData, loginSchema } from "@/core/domain/schemas/loginSchema";
+import {
+  LoginFormDataType,
+  loginSchema,
+} from "@/core/domain/schemas/loginSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { Footer } from "./Footer";
 import { Button } from "./ui/button";
 import {
@@ -19,30 +21,17 @@ import {
 import { Input } from "./ui/input";
 
 interface LoginFormProps {
-  onSubmit: (data: LoginFormData) => void;
+  onSubmit: (data: LoginFormDataType) => void;
   isLoading: boolean;
-  errorMessage: string;
 }
 
-export function LoginForm({
-  onSubmit,
-  isLoading,
-  errorMessage,
-}: LoginFormProps) {
+export function LoginForm({ onSubmit, isLoading }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
 
-  const form = useForm<LoginFormData>({
+  const form = useForm<LoginFormDataType>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
-
-  useEffect(() => {
-    if (errorMessage) {
-      toast.error("Falha na autenticação", {
-        description: errorMessage || "Erro ao conectar com o servidor.",
-      });
-    }
-  }, [errorMessage]);
 
   return (
     <div className="w-full space-y-8">

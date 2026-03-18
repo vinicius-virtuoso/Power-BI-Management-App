@@ -1,36 +1,31 @@
+import { apiFetch } from "@/core/data/apiFetch";
+import { AppError } from "@/core/domain/errors/AppError";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session_token")?.value;
-
-  if (!token) {
-    return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
-  }
+  const token = (await cookies()).get("session_token")?.value;
 
   try {
-    const response = await fetch(`${process.env.API_URL}/users/me`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`, // Aqui injetamos o JWT que está no cookie
-        "Content-Type": "application/json",
-      },
+    const data = await apiFetch(`${process.env.API_URL}/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error: unknown) {
+    // Use unknown em vez de any
 
-    if (response.status === 401) {
+    if (error instanceof AppError) {
+      // Aqui o TS sabe que 'error' tem message e statusCode
       return NextResponse.json(
-        { message: "Sessão expirada ou inválida" },
-        { status: response.status },
+        { message: error.message, statusCode: error.statusCode },
+        { status: error.statusCode },
       );
     }
 
-    return NextResponse.json(data);
-  } catch (error) {
+    // Se não for um AppError (ex: erro de sintaxe, erro de rede do fetch)
     return NextResponse.json(
-      { message: "Erro interno no servidor" },
+      { message: "Erro inesperado", statusCode: 500 },
       { status: 500 },
     );
   }

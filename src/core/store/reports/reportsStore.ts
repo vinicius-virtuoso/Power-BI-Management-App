@@ -1,20 +1,21 @@
 import { ApiReportsRepository } from "@/core/data/repositories/reports/ApiReportsRepository";
 import { ListReports, ReportProps } from "@/core/domain/entities/report";
 import { GetAllReportsUseCase } from "@/core/domain/use-cases/GetAllReportsUseCase";
+import { handleGlobalError } from "@/presentation/utils/errorHandler"; // Importante para o Toast
 import { create } from "zustand";
 
-// Instância única para evitar recriação de objetos
+// Instância única definida fora da store para performance
 const repository = new ApiReportsRepository();
 
 interface ReportsState {
   isLoadingReports: boolean;
   reportsList: { total: number; reports: ReportProps[] };
-  fetchReports: () => Promise<void>;
+  fetchReports: (userId: string) => Promise<void>;
   setReports: (reports: ListReports) => void;
   clearReports: () => void;
 
-  isLoadingDetails: boolean; // Trava específica para o token do Power BI
-  reportDetails: Record<string, any>; // Cache simples: { id_do_report: dados_do_token }
+  isLoadingDetails: boolean;
+  reportDetails: Record<string, any>;
   fetchReportDetails: (id: string) => Promise<void>;
 }
 
@@ -24,40 +25,56 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
   isLoadingDetails: false,
   reportDetails: {},
 
-  fetchReports: async () => {
-    // TRAVA DE SEGURANÇA: Se já estiver carregando, não faz nada
+  fetchReports: async (userId: string) => {
     if (get().isLoadingReports) return;
 
     set({ isLoadingReports: true });
 
     try {
       const useCase = new GetAllReportsUseCase(repository);
-      const data = await useCase.execute();
+      const data = await useCase.execute(userId);
+
       set({ reportsList: data });
     } catch (error) {
-      console.error("Erro ao buscar relatórios:", error);
+      // O handleGlobalError dispara o Toast (ex: "Sessão expirada" ou "Erro ao buscar relatórios")
+      // handleGlobalError(error);
+      throw error;
     } finally {
       set({ isLoadingReports: false });
     }
   },
+
   fetchReportDetails: async (id: string) => {
-    // Se já temos o detalhe no cache ou se já está carregando, aborta
+    // Cache check: se já temos os detalhes, não busca de novo
     if (get().isLoadingDetails || get().reportDetails[id]) return;
 
     set({ isLoadingDetails: true });
+
     try {
-      // Substitua pela chamada real do seu UseCase de detalhes
-      const repo = new ApiReportsRepository();
-      const data = await repo.getReportById(id);
+      // Usando a instância única 'repository' em vez de criar um 'new' aqui dentro
+      const data = await repository.getReportById(id);
 
       set((state) => ({
-        reportDetails: { ...state.reportDetails, [id]: data },
+        reportDetails: {
+          ...state.reportDetails,
+          [id]: data,
+        },
       }));
+    } catch (error) {
+      handleGlobalError(error);
+      throw error;
     } finally {
       set({ isLoadingDetails: false });
     }
   },
+
   setReports: (reportsList) => set({ reportsList, isLoadingReports: false }),
+
   clearReports: () =>
-    set({ reportsList: { total: 0, reports: [] }, isLoadingReports: false }),
+    set({
+      reportsList: { total: 0, reports: [] },
+      reportDetails: {}, // Limpa o cache de detalhes também
+      isLoadingReports: false,
+      isLoadingDetails: false,
+    }),
 }));

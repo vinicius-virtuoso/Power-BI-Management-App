@@ -1,3 +1,5 @@
+import { apiFetch } from "@/core/data/apiFetch";
+import { AppError } from "@/core/domain/errors/AppError";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -10,13 +12,18 @@ export async function PATCH(
   const cookieStore = await cookies();
   const token = cookieStore.get("session_token")?.value;
 
+  // 1. Bloqueio preventivo no BFF
   if (!token) {
-    return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    return NextResponse.json(
+      { message: "Não autorizado", statusCode: 401 },
+      { status: 401 },
+    );
   }
 
   try {
     const body = await request.json();
 
+    // Construção do payload (mantendo sua lógica de senha opcional)
     const updatePayload: any = {
       name: body.name,
       email: body.email,
@@ -26,32 +33,33 @@ export async function PATCH(
       updatePayload.password = body.password;
     }
 
-    const response = await fetch(
+    // 2. Chamada ao backend real via apiFetch
+    const data = await apiFetch(
       `${process.env.API_URL}/users/${updateUserId}`,
       {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
         body: JSON.stringify(updatePayload),
       },
     );
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    // 3. Retorno de sucesso
+    return NextResponse.json(data);
+  } catch (error: unknown) {
+    // 4. Tratamento de erro padronizado
+    if (error instanceof AppError) {
       return NextResponse.json(
-        { message: data.message || "Erro ao atualizar usuário" },
-        { status: response.status },
+        { message: error.message, statusCode: error.statusCode },
+        { status: error.statusCode },
       );
     }
 
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error("Erro na rota de update:", error);
+    // Erros genéricos (ex: JSON malformado no body ou queda de conexão)
+    console.error(`[PATCH_USER_ERROR] ID: ${updateUserId}:`, error);
     return NextResponse.json(
-      { message: "Erro interno no servidor" },
+      { message: "Erro inesperado ao atualizar usuário", statusCode: 500 },
       { status: 500 },
     );
   }

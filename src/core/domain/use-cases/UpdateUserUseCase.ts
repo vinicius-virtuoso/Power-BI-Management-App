@@ -5,7 +5,12 @@ export class UpdateUserUseCase {
 
   async execute(
     userId: string,
-    data: { name?: string; password?: string; email?: string },
+    data: {
+      name?: string;
+      password?: string;
+      email?: string;
+      role?: "USER" | "ADMIN";
+    },
   ) {
     return await this.usersRepository.userUpdate(userId, data);
   }

@@ -1,25 +1,10 @@
 "use client";
 
-import { useAuthStore } from "@/core/store/auth/authStore";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { toast } from "sonner";
 import { LoginForm } from "../components/LoginForm";
 import { useLoginController } from "../hooks/useLoginController";
 
 export function LoginScreen() {
-  const { handleLogin, isLoading, errorMessage } = useLoginController();
-  const { isAuthenticated } = useAuthStore();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push("/dashboard");
-      toast.success("Login realizado!", {
-        description: "Bem-vindo!",
-      });
-    }
-  }, [isAuthenticated, router]);
+  const { handleLogin, isLoading } = useLoginController();
 
   return (
     <div className="flex min-h-screen bg-background font-body">
@@ -52,11 +37,7 @@ export function LoginScreen() {
 
       <section className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-card">
         <div className="w-full max-w-100 space-y-8">
-          <LoginForm
-            onSubmit={handleLogin}
-            isLoading={isLoading}
-            errorMessage={errorMessage}
-          />
+          <LoginForm onSubmit={handleLogin} isLoading={isLoading} />
         </div>
       </section>
     </div>

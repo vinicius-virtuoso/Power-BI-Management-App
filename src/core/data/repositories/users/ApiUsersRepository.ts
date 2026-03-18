@@ -1,77 +1,27 @@
 import { User } from "@/core/domain/entities/user";
-import { UsersRepository } from "@/core/domain/repositories/users/UsersRepository";
-
-interface GetUsersResponse {
-  total: number;
-  users: User[];
-}
+import type { UsersRepository } from "@/core/domain/repositories/users/UsersRepository";
+import { apiFetch } from "../../apiFetch"; // Importe o utilitário
 
 export class ApiUsersRepository implements UsersRepository {
-  async creteUser(data: {
-    name: string;
-    email: string;
-    password: string;
-    role: "USER" | "ADMIN";
-  }): Promise<User> {
-    const response = await fetch(`/api/users/add`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || "Erro ao atualizar usuário");
-    }
-
-    return result;
-  }
-
-  async userUpdate(
-    userId: string,
-    data: {
-      name?: string;
-      password?: string;
-      email?: string;
-    },
-  ): Promise<User> {
-    const response = await fetch(`/api/users/${userId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || "Erro ao atualizar usuário");
-    }
-
-    return result;
+  getAllUsers(): Promise<{ total: number; users: User[] }> {
+    return apiFetch<{ total: number; users: User[] }>("/api/users");
   }
 
   async getMe(): Promise<User> {
-    const response = await fetch("/api/users/me");
-
-    if (!response.ok) {
-      throw new Error("Sessão expirada ou inválida");
-    }
-
-    return response.json();
+    return apiFetch<User>("/api/users/me");
   }
 
-  async getAllUsers(): Promise<GetUsersResponse> {
-    const response = await fetch("/api/users");
+  async userUpdate(userId: string, data: any): Promise<User> {
+    return apiFetch<User>(`/api/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
 
-    if (!response.ok) {
-      throw new Error("Erro ao buscar usuários");
-    }
-
-    return response.json();
+  async creteUser(data: any): Promise<User> {
+    return apiFetch<User>(`/api/users/add`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   }
 }

@@ -1,6 +1,6 @@
 import { ListReports, ReportProps } from "../../entities/report";
 
 export interface ReportsRepository {
-  getReports(): Promise<ListReports>;
+  getReports(userId: string): Promise<ListReports>;
   getReportById(reportId: string): Promise<ReportProps>;
 }

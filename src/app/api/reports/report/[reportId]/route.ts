@@ -3,7 +3,11 @@ import { AppError } from "@/core/domain/errors/AppError";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ reportId: string }> },
+) {
+  const { reportId } = await params;
   const cookieStore = await cookies();
   const token = cookieStore.get("session_token")?.value;
 
@@ -15,12 +19,16 @@ export async function GET() {
   }
 
   try {
-    const data = await apiFetch(`${process.env.API_URL}/users`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
+    // apiFetch já lida com o token e validação de erro
+    const data = await apiFetch(
+      `${process.env.API_URL}/reports/report/${reportId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     return NextResponse.json(data);
   } catch (error: unknown) {
@@ -32,7 +40,7 @@ export async function GET() {
     }
 
     return NextResponse.json(
-      { message: "Erro inesperado", statusCode: 500 },
+      { message: "Erro inesperado ao buscar relatório", statusCode: 500 },
       { status: 500 },
     );
   }

@@ -16,8 +16,8 @@ export default function RootLayout({
       <body>
         <TooltipProvider>
           <main className="overflow-hidden">{children}</main>
-          <Toaster position="top-right" richColors closeButton />
         </TooltipProvider>
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );

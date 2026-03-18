@@ -1,48 +1,44 @@
 import { useReportsStore } from "@/core/store/reports/reportsStore";
 import { useCallback, useEffect, useRef } from "react";
 
+// @/presentation/hooks/useReportDetails.ts
+
 export function useReportDetails(reportId?: string) {
   const { reportDetails, isLoadingDetails, fetchReportDetails } =
     useReportsStore();
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Pegamos o relatório do cache global
   const report = reportId ? reportDetails[reportId] : null;
 
-  // 2. Ajuste na função loadReport
   const loadReport = useCallback(
-    async (id: string, isRefresh = false) => {
+    async (id: string) => {
       if (!id) return;
 
-      // Chama a store (que já tem a trava de isLoading e Cache)
-      await fetchReportDetails(id);
+      try {
+        await fetchReportDetails(id);
 
-      // Gerencia o Refresh do Token (Power BI expira)
-      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+        // REFRESH LOGIC
+        if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 
-      refreshTimerRef.current = setTimeout(
-        () => {
-          // Usamos uma chamada recursiva simples aqui
-          loadReport(id, true);
-        },
-        50 * 60 * 1000,
-      ); // 50 min
+        refreshTimerRef.current = setTimeout(
+          () => {
+            loadReport(id); // Tenta renovar o token
+          },
+          50 * 60 * 1000,
+        ); // 50 min
+      } catch (error: any) {
+        if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+        throw error;
+      }
     },
-    [fetchReportDetails], // Dependência estável da store
+    [fetchReportDetails],
   );
 
-  // 3. Limpeza ao desmontar
   useEffect(() => {
     return () => {
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-      }
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
   }, []);
 
-  return {
-    report,
-    isLoading: isLoadingDetails,
-    loadReport,
-  };
+  return { report, isLoading: isLoadingDetails, loadReport };
 }

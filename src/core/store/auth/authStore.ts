@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -7,16 +6,12 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      isAuthenticated: false,
-      setAuthenticated: (value) => set({ isAuthenticated: value }),
-      logout: async () => {
-        await fetch("/api/auth/logout", { method: "POST" });
-        set({ isAuthenticated: false });
-      },
-    }),
-    { name: "auth-session" }, // Salva no LocalStorage
-  ),
-);
+export const useAuthStore = create<AuthState>((set) => ({
+  isAuthenticated: false,
+  setAuthenticated: (value) => set({ isAuthenticated: value }),
+  logout: async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.localStorage.removeItem("user-data");
+    set({ isAuthenticated: false });
+  },
+}));

@@ -1,16 +1,19 @@
 import { ApiUsersRepository } from "@/core/data/repositories/users/ApiUsersRepository";
 import { UserProps } from "@/core/domain/entities/user";
 import { GetProfileUseCase } from "@/core/domain/use-cases/GetProfileUseCase";
+import { handleGlobalError } from "@/presentation/utils/errorHandler"; // Importante para o Toast
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface UserState {
   user: UserProps | null;
-  isLoading: boolean; // NOVO: Controle de trava
+  isLoading: boolean;
   setUser: (user: UserProps) => void;
-  fetchUserMe: () => Promise<void>; // NOVO: Ação inteligente
+  fetchUserMe: () => Promise<void>;
   clearUser: () => void;
 }
+
+const repo = new ApiUsersRepository();
 
 export const useUserMeStore = create<UserState>()(
   persist(
@@ -26,13 +29,14 @@ export const useUserMeStore = create<UserState>()(
         set({ isLoading: true });
 
         try {
-          const repo = new ApiUsersRepository();
           const useCase = new GetProfileUseCase(repo);
           const userData = await useCase.execute();
 
           set({ user: userData });
-        } catch (error) {
-          console.error("Erro ao carregar perfil:", error);
+        } catch (error: unknown) {
+          set({ user: null });
+
+          handleGlobalError(error);
           throw error;
         } finally {
           set({ isLoading: false });

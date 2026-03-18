@@ -1,7 +1,12 @@
 "use client";
 
+import { UserProps } from "@/core/domain/entities/user";
+import { useUserMeStore } from "@/core/store/users/userMeStore";
+import { handleGlobalError } from "@/presentation/utils/errorHandler"; // Importado
+import { cn } from "@/shared/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Ban,
   ChevronLeft,
@@ -41,41 +46,45 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { Input } from "../components/ui/input";
-
-import { UserProps } from "@/core/domain/entities/user";
-import { useUserMeStore } from "@/core/store/users/userMeStore";
-import { cn } from "@/shared/utils";
-import { AnimatePresence, motion } from "framer-motion";
 import { useUsers } from "../hooks/useUsers";
 
 export default function UsersManagementScreen() {
   const router = useRouter();
   const { usersData, isLoading, fetchUsers, removeUserFromList } = useUsers();
-  const { user } = useUserMeStore();
+  const { user: loggedInUser } = useUserMeStore();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProps | null>(null);
 
-  const loggedInUserId = user?.id;
-
+  // --- CARREGAMENTO INICIAL COM TRATAMENTO ---
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    const load = async () => {
+      try {
+        await fetchUsers();
+      } catch (error) {
+        handleGlobalError(error);
+        // Se for 401, o handleGlobalError avisa, e você pode redirecionar se quiser
+        if ((error as any).statusCode === 401) router.push("/login");
+      }
+    };
+    load();
+  }, [fetchUsers, router]);
 
   const filteredUsers = useMemo(() => {
-    const usersList = usersData?.users || [];
-
+    const usersList = Array.isArray(usersData?.users) ? usersData.users : [];
     if (!searchTerm) return usersList;
 
     const lowerSearch = searchTerm.toLowerCase();
     return usersList.filter(
-      (user) =>
-        user.name.toLowerCase().includes(lowerSearch) ||
-        user.email.toLowerCase().includes(lowerSearch),
+      (u) =>
+        u.name.toLowerCase().includes(lowerSearch) ||
+        u.email.toLowerCase().includes(lowerSearch),
     );
-  }, [searchTerm, usersData.users]);
+  }, [searchTerm, usersData?.users]);
 
+  // --- HANDLERS ---
   const handleEdit = (user: UserProps) => {
     setSelectedUser(user);
     setIsModalOpen(true);
@@ -86,36 +95,37 @@ export default function UsersManagementScreen() {
     setIsDeleteAlertOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!selectedUser) return;
-
-    removeUserFromList(selectedUser.id);
-    setIsDeleteAlertOpen(false);
-    setSelectedUser(null);
+    try {
+      removeUserFromList(selectedUser.id);
+      setIsDeleteAlertOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      handleGlobalError(error);
+    }
   };
 
   return (
     <>
       <AnimatePresence mode="wait">
         <motion.section
-          // Ajustado: h-screen (ou calc) para manter o layout fixo e permitir scroll interno
-          // grid-rows-[auto_1fr] faz a primeira parte ser dinâmica e a segunda ocupar o resto
-          className="p-4 max-w-7xl mx-auto grid grid-rows-[auto_1fr] grid-cols-1 gap-4 h-full overflow-hidden"
-          key="users-loader"
-          initial={{ opacity: 0, scale: 0.99 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="p-4 max-w-7xl mx-auto grid grid-rows-[auto_1fr] gap-4 h-full overflow-hidden"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
         >
-          {/* PRIMEIRA LINHA: Cabeçalho e Busca (Max 250px implícito pelo conteúdo e gap) */}
+          {/* CABEÇALHO */}
           <div className="flex flex-col gap-4 shrink-0">
             <div>
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-fit gap-2 text-muted-foreground hover:text-primary transition-colors -ml-2 mb-2"
+                className="gap-2 text-muted-foreground hover:text-primary -ml-2 mb-2"
                 onClick={() => router.push("/dashboard")}
               >
-                <ChevronLeft className="w-4 h-4 mr-2" />
+                <ChevronLeft className="w-4 h-4" />
                 Voltar para os Relatórios
               </Button>
 
@@ -133,42 +143,37 @@ export default function UsersManagementScreen() {
                     setSelectedUser(null);
                     setIsModalOpen(true);
                   }}
-                  size="lg"
+                  size="default"
                   className="gap-2 shadow-md"
                 >
-                  <Plus className="w-4 h-4 mr-2" /> Novo Usuário
+                  <Plus className="w-4 h-4" /> Novo Usuário
                 </Button>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 bg-card px-4 py-1.5 rounded-xl border shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all h-10">
-              <Search className="w-4 h-4 text-muted-foreground ml-2" />
+            <div className="flex items-center gap-3 bg-card px-4 rounded-xl border shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all h-10">
+              <Search className="w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Pesquisar por nome ou e-mail..."
-                className="border-none shadow-none focus-visible:ring-0 bg-transparent h-9 text-sm"
+                className="border-none shadow-none focus-visible:ring-0 bg-transparent h-full text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
 
-          {/* SEGUNDA LINHA: Tabela com Scroll Independente */}
+          {/* TABELA COM SCROLL */}
           <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col">
-            <div className="overflow-y-auto flex-1 relative custom-scrollbar">
+            <div className="overflow-y-auto flex-1 custom-scrollbar">
               <table className="w-full text-sm text-left border-collapse">
-                {/* sticky top-0 mantém o header visível durante o scroll */}
-                <thead className="bg-muted/90 backdrop-blur-sm border-b text-muted-foreground font-medium text-xs uppercase tracking-wider sticky top-0 z-10">
-                  <tr>
-                    <th className="p-4 font-semibold">Usuário</th>
-                    <th className="p-4 font-semibold">Nível</th>
-                    <th className="p-4 font-semibold">Status</th>
-                    <th className="p-4 font-semibold hidden md:table-cell">
-                      Membro desde
-                    </th>
-                    <th className="p-4 font-semibold hidden lg:table-cell">
-                      Acesso
-                    </th>
-                    <th className="p-4 font-semibold text-right">Ações</th>
+                <thead className="bg-muted/90 backdrop-blur-sm border-b text-muted-foreground sticky top-0 z-10">
+                  <tr className="text-[10px] uppercase tracking-wider font-bold">
+                    <th className="p-4">Usuário</th>
+                    <th className="p-4">Nível</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4 hidden md:table-cell">Membro desde</th>
+                    <th className="p-4 hidden lg:table-cell">Último Acesso</th>
+                    <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -177,7 +182,7 @@ export default function UsersManagementScreen() {
                       <td colSpan={6} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                          <p>Carregando usuários...</p>
+                          <p className="text-xs">Carregando usuários...</p>
                         </div>
                       </td>
                     </tr>
@@ -191,14 +196,14 @@ export default function UsersManagementScreen() {
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((user) => {
-                      const isMe = user.id === loggedInUserId;
+                    filteredUsers.map((u) => {
+                      const isMe = u.id === loggedInUser?.id;
 
                       return (
                         <tr
-                          key={user.id}
+                          key={u.id}
                           className={cn(
-                            "transition-colors group relative",
+                            "transition-colors group",
                             isMe
                               ? "bg-primary/5 hover:bg-primary/10"
                               : "hover:bg-muted/20",
@@ -206,36 +211,29 @@ export default function UsersManagementScreen() {
                         >
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              {isMe && (
-                                <div className="absolute left-0 w-1 h-3/4 top-1/2 -translate-y-1/2 bg-primary rounded-r-full" />
-                              )}
-
                               <div
                                 className={cn(
-                                  "w-10 h-10 rounded-full flex items-center justify-center font-bold border shrink-0 text-sm",
+                                  "w-9 h-9 rounded-full flex items-center justify-center font-bold border shrink-0 text-xs",
                                   isMe
                                     ? "bg-primary text-primary-foreground border-primary"
                                     : "bg-muted text-muted-foreground border-border",
                                 )}
                               >
-                                {user.name.charAt(0).toUpperCase()}
+                                {u.name.charAt(0).toUpperCase()}
                               </div>
                               <div className="flex flex-col min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-semibold truncate text-foreground">
-                                    {user.name}
+                                  <span className="font-semibold truncate">
+                                    {u.name}
                                   </span>
                                   {isMe && (
-                                    <Badge
-                                      variant="outline"
-                                      className="h-4 px-1.5 text-[9px] font-bold uppercase bg-primary/10 text-primary border-primary/20 shadow-none"
-                                    >
+                                    <Badge className="h-4 px-1 text-[9px] bg-primary/20 text-primary border-none shadow-none">
                                       Você
                                     </Badge>
                                   )}
                                 </div>
-                                <span className="text-[11px] text-muted-foreground truncate italic">
-                                  {user.email}
+                                <span className="text-[11px] text-muted-foreground truncate">
+                                  {u.email}
                                 </span>
                               </div>
                             </div>
@@ -244,16 +242,16 @@ export default function UsersManagementScreen() {
                           <td className="p-4">
                             <Badge
                               variant={
-                                user.role === "ADMIN" ? "default" : "secondary"
+                                u.role === "ADMIN" ? "default" : "secondary"
                               }
-                              className="gap-1.5 shadow-none font-medium h-6"
+                              className="gap-1 shadow-none h-6 text-[10px]"
                             >
-                              {user.role === "ADMIN" ? (
-                                <ShieldCheck className="w-3.5 h-3.5" />
+                              {u.role === "ADMIN" ? (
+                                <ShieldCheck className="w-3 h-3" />
                               ) : (
-                                <User className="w-3.5 h-3.5" />
+                                <User className="w-3 h-3" />
                               )}
-                              {user.role === "ADMIN" ? "Admin" : "Padrão"}
+                              {u.role === "ADMIN" ? "Admin" : "Padrão"}
                             </Badge>
                           </td>
 
@@ -261,8 +259,8 @@ export default function UsersManagementScreen() {
                             <Badge
                               variant="outline"
                               className={cn(
-                                "gap-1.5 py-0 h-6 px-2 font-medium shadow-none",
-                                user.isActive
+                                "gap-1.5 h-6 px-2 font-medium shadow-none text-[10px]",
+                                u.isActive
                                   ? "bg-green-50 text-green-700 border-green-200"
                                   : "bg-red-50 text-red-700 border-red-200",
                               )}
@@ -270,33 +268,30 @@ export default function UsersManagementScreen() {
                               <span
                                 className={cn(
                                   "w-1.5 h-1.5 rounded-full",
-                                  user.isActive
+                                  u.isActive
                                     ? "bg-green-500 animate-pulse"
                                     : "bg-red-500",
                                 )}
                               />
-                              {user.isActive ? "Ativo" : "Inativo"}
+                              {u.isActive ? "Ativo" : "Inativo"}
                             </Badge>
                           </td>
 
-                          <td className="p-4 hidden md:table-cell text-muted-foreground text-xs font-medium">
-                            {format(new Date(user.createdAt), "dd MMM yyyy", {
+                          <td className="p-4 hidden md:table-cell text-muted-foreground text-xs italic">
+                            {format(new Date(u.createdAt), "dd/MM/yyyy", {
                               locale: ptBR,
                             })}
                           </td>
 
-                          <td className="p-4 hidden lg:table-cell">
-                            <div className="flex items-center gap-2 text-foreground/70 text-xs font-medium">
-                              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                              {user.lastAccess
-                                ? formatDistanceToNow(
-                                    new Date(user.lastAccess),
-                                    {
-                                      addSuffix: true,
-                                      locale: ptBR,
-                                    },
-                                  )
-                                : "---"}
+                          <td className="p-4 hidden lg:table-cell text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-3 h-3" />
+                              {u.lastAccess
+                                ? formatDistanceToNow(new Date(u.lastAccess), {
+                                    addSuffix: true,
+                                    locale: ptBR,
+                                  })
+                                : "Nunca"}
                             </div>
                           </td>
 
@@ -306,18 +301,16 @@ export default function UsersManagementScreen() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 hover:bg-background border"
+                                  className="h-8 w-8 border hover:bg-background"
                                 >
                                   <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-52">
-                                <DropdownMenuLabel className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">
+                                <DropdownMenuLabel className="text-[9px] font-bold text-muted-foreground uppercase">
                                   Opções
                                 </DropdownMenuLabel>
-                                <DropdownMenuItem
-                                  onClick={() => handleEdit(user)}
-                                >
+                                <DropdownMenuItem onClick={() => handleEdit(u)}>
                                   <UserPen className="w-4 h-4 mr-2" /> Editar
                                   Cadastro
                                 </DropdownMenuItem>
@@ -325,19 +318,20 @@ export default function UsersManagementScreen() {
                                 <DropdownMenuItem
                                   disabled={isMe}
                                   className={
-                                    user.isActive
+                                    u.isActive
                                       ? "text-orange-600"
                                       : "text-green-600"
                                   }
                                 >
-                                  {user.isActive ? (
+                                  {u.isActive ? (
                                     <>
                                       <Ban className="w-4 h-4 mr-2" /> Bloquear
+                                      Acesso
                                     </>
                                   ) : (
                                     <>
                                       <UserCheck className="w-4 h-4 mr-2" />{" "}
-                                      Ativar
+                                      Ativar Acesso
                                     </>
                                   )}
                                 </DropdownMenuItem>
@@ -345,10 +339,8 @@ export default function UsersManagementScreen() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   disabled={isMe}
-                                  className="bg-destructive focus:bg-destructive/50 focus:text-primary-foreground cursor-pointer text-accent-foreground"
-                                  onClick={() =>
-                                    !isMe && handleOpenDeleteAlert(user)
-                                  }
+                                  className="text-red-600 focus:bg-red-50 focus:text-red-600"
+                                  onClick={() => handleOpenDeleteAlert(u)}
                                 >
                                   <Trash2 className="w-4 h-4 mr-2" /> Remover do
                                   Sistema
@@ -365,10 +357,13 @@ export default function UsersManagementScreen() {
             </div>
           </div>
 
-          {/* Modais fora do fluxo do grid */}
+          {/* MODAIS */}
           <UserFormModal
             isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
+            onClose={() => {
+              setIsModalOpen(false);
+              setSelectedUser(null);
+            }}
             user={selectedUser}
           />
 
@@ -380,7 +375,7 @@ export default function UsersManagementScreen() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Confirmar exclusão?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Remover{" "}
+                  Deseja realmente remover{" "}
                   <span className="font-bold text-foreground">
                     {selectedUser?.name}
                   </span>

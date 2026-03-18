@@ -7,7 +7,7 @@ import { useUserMeStore } from "@/core/store/users/userMeStore";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReportViewer from "../components/ReportViewer";
 import { SidebarCustom } from "../components/SidebarCustom";
 import { useSidebar } from "../components/ui/sidebar";
@@ -21,7 +21,6 @@ export type ReportData = {
   thumbnailColor: string;
 };
 
-// Funções utilitárias movidas para fora para evitar re-instanciação
 function nameToColor(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++)
@@ -42,23 +41,20 @@ function apiToReport(r: ReportProps, favId: string | null): ReportData {
 }
 
 export function DashboardScreen() {
-  const { setAuthenticated } = useAuthStore();
-  const { fetchUserMe } = useUserMeStore();
-  const { reportsList, isLoadingReports, fetchReports } = useReportsStore();
-  const [isLoaded, setIsLoaded] = useState(false);
   const router = useRouter();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+
+  const { setAuthenticated, logout } = useAuthStore();
+  const { fetchUserMe, user } = useUserMeStore();
+  const { reportsList, isLoadingReports, fetchReports } = useReportsStore();
+
+  const [isLoaded, setIsLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
-  // Cadeado para evitar o double-mount do React 18 Strict Mode
-  const isInitialMount = useRef(true);
-
-  const currentReport = useMemo(() => {
-    return reportsList?.reports?.find((r) => r.id === selectedReportId) ?? null;
-  }, [reportsList, selectedReportId]);
+  // --- MEMOS ---
 
   const reportsAll = useMemo(() => {
     const list = Array.isArray(reportsList?.reports) ? reportsList.reports : [];
@@ -77,45 +73,63 @@ export function DashboardScreen() {
       });
   }, [reportsAll, search]);
 
-  // Inicialização Única
-  useEffect(() => {
-    if (!isInitialMount.current) return;
-    isInitialMount.current = false;
+  const currentReport = useMemo(() => {
+    return reportsList?.reports?.find((r) => r.id === selectedReportId) ?? null;
+  }, [reportsList, selectedReportId]);
 
-    const init = async () => {
+  // --- EFEITOS ---
+
+  // 1. Carrega Perfil do Usuário
+  useEffect(() => {
+    const initUser = async () => {
       try {
         const fav = localStorage.getItem("favorite_report_id");
         setFavoriteId(fav);
+        await fetchUserMe();
+      } catch (error: any) {
+        // Se der erro 401 ou qualquer erro de auth no carregamento inicial
+        logout(); // Limpa as stores
 
-        // Chamadas paralelas com trava na store
-        await Promise.all([fetchUserMe(), fetchReports()]);
-
-        setAuthenticated(true);
-      } catch (error) {
-        console.error("Erro na inicialização:", error);
+        // FORÇA O REDIRECIONAMENTO
         router.push("/login");
-      } finally {
-        setIsLoaded(true);
+        // Ou window.location.href = "/login";
       }
     };
+    initUser();
+  }, [fetchUserMe, logout, router]);
 
-    init();
-  }, [fetchUserMe, fetchReports, setAuthenticated, router]);
-
-  // Seleção automática do relatório
+  // 2. Carrega Relatórios baseados no ID do usuário
   useEffect(() => {
-    if (reportsAll.length > 0 && !selectedReportId) {
-      const storedFavId = localStorage.getItem("favorite_report_id");
-      const favorite = reportsAll.find((r) => r.id === storedFavId);
+    try {
+      if (user?.id) {
+        fetchReports(user.id);
+      }
+    } catch (error: any) {
+      logout();
+      router.push("/login");
+    } finally {
+      setIsLoaded(true);
+    }
+  }, [user?.id, fetchReports, setAuthenticated, router, logout]);
+
+  // 3. Gerenciamento de Seleção Inicial (Favorito ou Primeiro)
+  useEffect(() => {
+    if (isLoaded && reportsAll.length > 0 && !selectedReportId) {
+      const favorite = reportsAll.find((r) => r.id === favoriteId);
       setSelectedReportId(favorite ? favorite.id : filteredReports[0]?.id);
     }
-  }, [reportsAll, filteredReports, selectedReportId]);
+  }, [isLoaded, reportsAll, filteredReports, favoriteId, selectedReportId]);
+
+  // --- HANDLERS ---
 
   const toggleFavorite = (id: string) => {
     const newFavId = favoriteId === id ? null : id;
     setFavoriteId(newFavId);
-    if (newFavId) localStorage.setItem("favorite_report_id", newFavId);
-    else localStorage.removeItem("favorite_report_id");
+    if (newFavId) {
+      localStorage.setItem("favorite_report_id", newFavId);
+    } else {
+      localStorage.removeItem("favorite_report_id");
+    }
   };
 
   return (
@@ -127,7 +141,6 @@ export function DashboardScreen() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
             className="h-full w-full flex items-center justify-center"
           >
             <div className="flex flex-col items-center gap-2">
@@ -143,7 +156,7 @@ export function DashboardScreen() {
             initial={{ opacity: 0, scale: 0.99 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex gap-2 h-full w-full p-2"
+            className="flex gap-2 h-full w-full pr-2 py-2"
           >
             <SidebarCustom
               selectedId={selectedReportId}
@@ -155,7 +168,8 @@ export function DashboardScreen() {
               setSearch={setSearch}
               toggleFavorite={toggleFavorite}
             />
-            <div className="flex flex-1 shadow-md rounded-md w-full h-full overflow-hidden">
+
+            <div className="flex flex-1 shadow-md rounded-md w-full h-full overflow-hidden border bg-card">
               <ReportViewer
                 report={currentReport}
                 isFavorite={currentReport?.id === favoriteId}
