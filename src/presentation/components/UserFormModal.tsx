@@ -45,7 +45,6 @@ export default function UserFormModal({
   const { userUpdate, fetchUsers, createUser } = useUsers();
   const { user: loggedInUser } = useUserMeStore();
   const [showPassword, setShowPassword] = useState(false); // Novo estado // Pegamos o usuário logado
-  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false); // Novo estado // Pegamos o usuário logado
 
   const {
     register,
