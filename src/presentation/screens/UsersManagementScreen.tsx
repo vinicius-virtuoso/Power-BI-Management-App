@@ -24,6 +24,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { toast } from "sonner";
 import UserFormModal from "../components/UserFormModal";
 import {
   AlertDialog,
@@ -50,7 +51,14 @@ import { useUsers } from "../hooks/useUsers";
 
 export default function UsersManagementScreen() {
   const router = useRouter();
-  const { usersData, isLoading, fetchUsers, removeUserFromList } = useUsers();
+  const {
+    usersData,
+    isLoading,
+    fetchUsers,
+    userActivate,
+    isUpdating,
+    userDelete,
+  } = useUsers();
   const { user: loggedInUser } = useUserMeStore();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -90,6 +98,14 @@ export default function UsersManagementScreen() {
     setIsModalOpen(true);
   };
 
+  const handleActivatedUser = async (user: UserProps) => {
+    try {
+      await userActivate(user.id, user.isActive);
+    } catch (error) {
+      handleGlobalError(error);
+    }
+  };
+
   const handleOpenDeleteAlert = (user: UserProps) => {
     setSelectedUser(user);
     setIsDeleteAlertOpen(true);
@@ -97,8 +113,15 @@ export default function UsersManagementScreen() {
 
   const confirmDelete = async () => {
     if (!selectedUser) return;
+
+    if (selectedUser.id === loggedInUser?.id) {
+      toast.error("Você não pode excluir sua própria conta.");
+      setIsDeleteAlertOpen(false);
+      return;
+    }
+
     try {
-      removeUserFromList(selectedUser.id);
+      await userDelete(selectedUser.id);
       setIsDeleteAlertOpen(false);
       setSelectedUser(null);
     } catch (error) {
@@ -316,30 +339,30 @@ export default function UsersManagementScreen() {
                                 </DropdownMenuItem>
 
                                 <DropdownMenuItem
-                                  disabled={isMe}
+                                  onClick={() => handleActivatedUser(u)}
+                                  disabled={isMe || isUpdating} // Adicione o isUpdating aqui
                                   className={
                                     u.isActive
                                       ? "text-orange-600"
                                       : "text-green-600"
                                   }
                                 >
-                                  {u.isActive ? (
-                                    <>
-                                      <Ban className="w-4 h-4 mr-2" /> Bloquear
-                                      Acesso
-                                    </>
+                                  {isUpdating ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  ) : u.isActive ? (
+                                    <Ban className="w-4 h-4 mr-2" />
                                   ) : (
-                                    <>
-                                      <UserCheck className="w-4 h-4 mr-2" />{" "}
-                                      Ativar Acesso
-                                    </>
+                                    <UserCheck className="w-4 h-4 mr-2" />
                                   )}
+                                  {u.isActive
+                                    ? "Desativar Acesso"
+                                    : "Ativar Acesso"}
                                 </DropdownMenuItem>
 
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   disabled={isMe}
-                                  className="text-red-600 focus:bg-red-50 focus:text-red-600"
+                                  className="text-red-600 focus:bg-destructive focus:text-accent-foreground"
                                   onClick={() => handleOpenDeleteAlert(u)}
                                 >
                                   <Trash2 className="w-4 h-4 mr-2" /> Remover do

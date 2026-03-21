@@ -1,14 +1,22 @@
 import { ApiUsersRepository } from "@/core/data/repositories/users/ApiUsersRepository";
+import { ActivateUserUseCase } from "@/core/domain/use-cases/ActivateUserUseCase";
 import { CreateUserUseCase } from "@/core/domain/use-cases/CreateUserUseCase";
+import { DeactivateUserUseCase } from "@/core/domain/use-cases/DeactivateUserUseCase";
+import { DeleteUserUseCase } from "@/core/domain/use-cases/DeleteUserUseCase";
 import { UpdateUserUseCase } from "@/core/domain/use-cases/UpdateUserUseCase";
 import { useUsersStore } from "@/core/store/users/useUsersStore";
-import { useCallback } from "react";
+import { useUserMeStore } from "@/core/store/users/userMeStore";
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import { useAsync } from "./useAsync";
 
 export function useUsers() {
   const usersData = useUsersStore((state) => state.usersData);
   const isLoading = useUsersStore((state) => state.isLoading);
   const error = useUsersStore((state) => state.error);
+
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { setUser } = useUserMeStore();
 
   const fetchUsers = useUsersStore((state) => state.fetchUsers);
   const removeUserFromList = useUsersStore((state) => state.removeUserFromList);
@@ -34,14 +42,64 @@ export function useUsers() {
 
   const userUpdate = useCallback(
     async (userId: string, data: any) => {
-      const repository = new ApiUsersRepository();
-      const useCase = new UpdateUserUseCase(repository);
+      setIsUpdating(true);
       try {
-        const updatedUser = await run(useCase.execute(userId, data));
-        await fetchUsers();
+        const repository = new ApiUsersRepository();
+        const useCase = new UpdateUserUseCase(repository);
+        const updatedUser = await useCase.execute(userId, data);
+        toast.success("Perfil atualizado com sucesso!");
         return updatedUser;
-      } catch (error) {
+      } catch (error: any) {
+        toast.error(error.message || "Falha ao atualizar perfil");
         throw error;
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [fetchUsers],
+  );
+
+  const userActivate = useCallback(
+    async (userId: string, isCurrentlyActive: boolean) => {
+      setIsUpdating(true);
+      try {
+        const repository = new ApiUsersRepository();
+        const activateUseCase = new ActivateUserUseCase(repository);
+        const deactivateUseCase = new DeactivateUserUseCase(repository);
+
+        if (isCurrentlyActive) {
+          await deactivateUseCase.execute(userId);
+          toast.success("Usuário desativado com sucesso!");
+        } else {
+          await activateUseCase.execute(userId);
+          toast.success("Usuário ativado com sucesso!");
+        }
+
+        await fetchUsers();
+      } catch (error: any) {
+        toast.error("Erro ao alterar status do usuário");
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [fetchUsers],
+  );
+
+  const userDelete = useCallback(
+    async (userId: string) => {
+      setIsUpdating(true);
+      try {
+        const repository = new ApiUsersRepository();
+        const deleteUseCase = new DeleteUserUseCase(repository);
+
+        await deleteUseCase.execute(userId);
+        toast.success("Usuário excluído com sucesso!");
+
+        await fetchUsers();
+      } catch (error: any) {
+        toast.error("Erro ao excluir usuário");
+      } finally {
+        setIsUpdating(false);
       }
     },
     [fetchUsers],
@@ -52,8 +110,10 @@ export function useUsers() {
     isLoading: loading,
     error,
     fetchUsers,
-    removeUserFromList,
     createUser,
     userUpdate,
+    isUpdating,
+    userActivate,
+    userDelete,
   };
 }

@@ -156,7 +156,7 @@ export function DashboardScreen() {
             initial={{ opacity: 0, scale: 0.99 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex gap-2 h-full w-full pr-2"
+            className="flex gap-2 h-full w-full"
           >
             <SidebarCustom
               selectedId={selectedReportId}
@@ -169,7 +169,7 @@ export function DashboardScreen() {
               toggleFavorite={toggleFavorite}
             />
 
-            <div className="flex flex-1 shadow-md w-full h-full overflow-hidden border bg-card">
+            <div className="flex flex-1 shadow-md w-full h-full overflow-hidden border bg-card -mr-6">
               <ReportViewer
                 report={currentReport}
                 isFavorite={currentReport?.id === favoriteId}

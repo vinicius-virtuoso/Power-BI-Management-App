@@ -5,10 +5,12 @@ import {
   userCreateSchema,
   type UserCreateSchemaType,
 } from "@/core/domain/schemas/userCreateSchema";
+import { useUserMeStore } from "@/core/store/users/userMeStore";
+import { cn } from "@/shared/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
-import { useForm, type Resolver } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useUsers } from "../hooks/useUsers";
 import { Button } from "./ui/button";
 import {
@@ -40,44 +42,35 @@ export default function UserFormModal({
   onClose,
   user,
 }: UserFormModalProps) {
-  // Importando as ações do seu hook de usuários
-  const { createUser, userUpdate, fetchUsers } = useUsers();
+  const { userUpdate, fetchUsers, createUser } = useUsers();
+  const { user: loggedInUser } = useUserMeStore(); // Pegamos o usuário logado
 
   const {
     register,
     handleSubmit,
     setValue,
     reset,
-    setError,
+    watch,
+    setError, // Importante para observar o valor em tempo real
     formState: { errors, isSubmitting },
   } = useForm<UserCreateSchemaType>({
-    resolver: zodResolver(userCreateSchema) as Resolver<UserCreateSchemaType>,
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      role: "USER",
-    },
+    resolver: zodResolver(userCreateSchema) as any,
   });
 
-  // Sincroniza o formulário com o usuário selecionado ou limpa para novo cadastro
+  // Observa o valor da role no formulário para o Select refletir a mudança
+  const currentRole = watch("role");
+
+  // Verifica se o usuário que estou editando sou EU mesmo
+  const isEditingMe = user?.id === loggedInUser?.id;
+
   useEffect(() => {
     if (isOpen) {
-      if (user) {
-        reset({
-          name: user.name,
-          email: user.email,
-          password: "", // Senha sempre vazia por segurança no modo edição
-          role: user.role,
-        });
-      } else {
-        reset({
-          name: "",
-          email: "",
-          password: "",
-          role: "USER",
-        });
-      }
+      reset({
+        name: user?.name || "",
+        email: user?.email || "",
+        password: "",
+        role: user?.role || "USER",
+      });
     }
   }, [user, reset, isOpen]);
 
@@ -181,12 +174,18 @@ export default function UserFormModal({
           <div className="space-y-1">
             <Label>Nível de Acesso</Label>
             <Select
+              // 1. Vincula a mudança ao hook-form
               onValueChange={(value) => setValue("role", value as any)}
-              value={user ? (user.role as string) : undefined}
-              defaultValue="USER"
+              // 2. Faz o Select ler o valor atual do formulário
+              value={currentRole}
+              // 3. Desabilita se for o próprio usuário
+              disabled={isEditingMe}
             >
               <SelectTrigger
-                className={errors.role ? "border-destructive" : ""}
+                className={cn(
+                  errors.role && "border-destructive",
+                  isEditingMe && "bg-muted cursor-not-allowed",
+                )}
               >
                 <SelectValue placeholder="Selecione um nível" />
               </SelectTrigger>
@@ -195,9 +194,10 @@ export default function UserFormModal({
                 <SelectItem value="ADMIN">Administrador</SelectItem>
               </SelectContent>
             </Select>
-            {errors.role && (
-              <p className="text-[11px] text-destructive font-medium italic">
-                {errors.role.message}
+
+            {isEditingMe && (
+              <p className="text-[10px] text-muted-foreground italic">
+                Você não pode alterar seu próprio nível de acesso.
               </p>
             )}
           </div>

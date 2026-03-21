@@ -125,7 +125,7 @@ const ReportCard = ({
 
               {report?.lastUpdated && formattedDate && (
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 text-[9px] text-muted-foreground">
                     <Clock className="w-3 h-3" />
                     {formattedDate}
                   </span>

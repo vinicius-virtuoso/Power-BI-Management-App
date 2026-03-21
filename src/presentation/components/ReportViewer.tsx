@@ -60,10 +60,29 @@ const ReportEmbed = ({
         tokenType: pbi.models.TokenType.Embed,
         accessToken: data.token,
         embedUrl: data.embedUrl,
-        id: data.externalId || data.id,
+        uniqueId: data.externalId || data.id,
+        permissions: pbi.models.Permissions.All,
+        viewMode: pbi.models.ViewMode.View,
         settings: {
+          filterPaneEnabled: false,
           navContentPaneEnabled: true,
-          background: pbi.models.BackgroundType.Default,
+          layoutType: pbi.models.LayoutType.Custom,
+          customLayout: {
+            displayOption: pbi.models.DisplayOption.FitToPage,
+          },
+          panes: {
+            filters: {
+              visible: false,
+            },
+            pageNavigation: {
+              visible: true,
+            },
+          },
+          bars: {
+            statusBar: {
+              visible: false,
+            },
+          },
         },
       };
 
@@ -84,12 +103,18 @@ const ReportEmbed = ({
     };
   }, [data, reportId]);
 
-  return <div ref={containerRef} className="absolute inset-0 h-full w-full" />;
+  return (
+    <div
+      ref={containerRef}
+      className="absolute inset-0 h-full w-full overflow-hidden"
+    />
+  );
 };
 
 const ReportViewer = ({ report, isFavorite }: ReportViewerProps) => {
   const { isLoading: isApiLoading } = useReportDetails(report?.id);
   const [isRendering, setIsRendering] = useState(false);
+  const [showTitle, setShowTitle] = useState(true);
 
   // Ref para guardar a instância atual do embed
   const embedRef = useRef<Report | null>(null);
@@ -106,12 +131,18 @@ const ReportViewer = ({ report, isFavorite }: ReportViewerProps) => {
   useEffect(() => {
     if (report?.id) {
       setIsRendering(true);
+      setShowTitle(true);
     }
+    const timer = setTimeout(() => {
+      setShowTitle(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, [report?.id]);
 
   if (!report) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-muted/20 m-4 rounded-xl border-2 border-dashed text-center">
+      <div className="flex-1 flex items-center justify-center bg-muted/20 m-4 rounded-xl border-2 border-dashed text-center overflow-hidden">
         <div>
           <FileBarChart className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">
@@ -126,16 +157,26 @@ const ReportViewer = ({ report, isFavorite }: ReportViewerProps) => {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
-      <div className="flex items-center justify-between px-4 h-11 border-b bg-card">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-bold truncate max-w-[400px]">
-            {report.name}
-          </h2>
-          {isFavorite && (
-            <Star className="w-3.5 h-3.5 fill-accent text-accent" />
-          )}
-        </div>
-      </div>
+      <AnimatePresence>
+        {showTitle && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 44, opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+            className="flex items-center justify-between px-4 border-b bg-card shrink-0 overflow-hidden"
+          >
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold truncate max-w-[400px]">
+                {report.name}
+              </h2>
+              {isFavorite && (
+                <Star className="w-3.5 h-3.5 fill-accent text-accent" />
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex-1 relative overflow-hidden bg-background">
         <AnimatePresence>

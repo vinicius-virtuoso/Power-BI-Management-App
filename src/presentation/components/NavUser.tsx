@@ -21,6 +21,7 @@ import { useUserMeStore } from "@/core/store/users/userMeStore";
 import { cn } from "@/shared/utils";
 import { usePathname, useRouter } from "next/navigation";
 
+import { useUsers } from "../hooks/useUsers";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -48,8 +49,6 @@ import {
   useSidebar,
 } from "./ui/sidebar";
 
-import { useUpdateUser } from "../hooks/useUpdateUser";
-
 type ProfileFormData = {
   name: string;
   email: string;
@@ -71,7 +70,7 @@ export function NavUser({ isCollapsed }: NavUserProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const isAdmin = user?.role.toLowerCase() === "admin";
 
-  const { updateUser, isUpdating } = useUpdateUser();
+  const { userUpdate, isUpdating } = useUsers();
 
   const pathname = usePathname();
   const isUserManagementActive = pathname === "/dashboard/users-management";
@@ -100,17 +99,17 @@ export function NavUser({ isCollapsed }: NavUserProps) {
       console.error("Erro logout:", error);
     } finally {
       setAuthenticated(false);
+      router.push("/login");
       clearUser();
       clearReports();
       localStorage.removeItem("pbi_report_states");
-      router.push("/login");
     }
   };
 
   const onUpdateProfile = async (data: ProfileFormData) => {
     // O hook já trata o toast e a atualização da store interna
     if (user) {
-      await updateUser(user.id, {
+      await userUpdate(user.id, {
         name: data.name,
         email: data.email,
         password: data.password,

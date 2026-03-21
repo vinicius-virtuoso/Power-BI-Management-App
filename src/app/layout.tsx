@@ -1,5 +1,6 @@
 import { TooltipProvider } from "@/presentation/components/ui/tooltip";
 import { cn } from "@/shared/utils";
+import { AnimatePresence } from "framer-motion";
 import { Geist } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -15,7 +16,9 @@ export default function RootLayout({
     <html lang="pt-br" className={cn("font-sans", geist.variable)}>
       <body>
         <TooltipProvider>
-          <main className="overflow-hidden">{children}</main>
+          <AnimatePresence mode="wait">
+            <main className="overflow-hidden">{children}</main>
+          </AnimatePresence>
         </TooltipProvider>
         <Toaster position="top-right" richColors closeButton />
       </body>

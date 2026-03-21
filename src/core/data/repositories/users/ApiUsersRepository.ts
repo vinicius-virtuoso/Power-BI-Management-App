@@ -3,6 +3,21 @@ import type { UsersRepository } from "@/core/domain/repositories/users/UsersRepo
 import { apiFetch } from "../../apiFetch"; // Importe o utilitário
 
 export class ApiUsersRepository implements UsersRepository {
+  activateUser(userId: string): Promise<User> {
+    return apiFetch<User>(`/api/users/activate/${userId}`, {
+      method: "PATCH",
+    });
+  }
+  deactivateUser(userId: string): Promise<User> {
+    return apiFetch<User>(`/api/users/deactivate/${userId}`, {
+      method: "PATCH",
+    });
+  }
+  deleteUser(userId: string): Promise<void> {
+    return apiFetch<void>(`/api/users/delete/${userId}`, {
+      method: "DELETE",
+    });
+  }
   getAllUsers(): Promise<{ total: number; users: User[] }> {
     return apiFetch<{ total: number; users: User[] }>("/api/users");
   }

@@ -8,6 +8,7 @@ export interface UsersRepository {
       name?: string;
       password?: string;
       email?: string;
+      role?: "USER" | "ADMIN";
     },
   ): Promise<User>;
   getAllUsers(): Promise<{
@@ -20,4 +21,7 @@ export interface UsersRepository {
     password: string;
     role: "USER" | "ADMIN";
   }): Promise<User>;
+  activateUser(userId: string): Promise<User>;
+  deactivateUser(userId: string): Promise<User>;
+  deleteUser(userId: string): Promise<void>;
 }

@@ -130,7 +130,7 @@
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
+  width: 2px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {

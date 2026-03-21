@@ -5,9 +5,9 @@ import { NextResponse } from "next/server";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ updateUserId: string }> },
+  { params }: { params: Promise<{ userId: string }> },
 ) {
-  const { updateUserId } = await params;
+  const { userId } = await params;
 
   const cookieStore = await cookies();
   const token = cookieStore.get("session_token")?.value;
@@ -21,28 +21,13 @@ export async function PATCH(
   }
 
   try {
-    const body = await request.json();
-
-    // Construção do payload (mantendo sua lógica de senha opcional)
-    const updatePayload: any = {
-      name: body.name,
-      email: body.email,
-      role: body.role,
-    };
-
-    if (body.password && body.password.trim() !== "") {
-      updatePayload.password = body.password;
-    }
-
-    // 2. Chamada ao backend real via apiFetch
     const data = await apiFetch(
-      `${process.env.API_URL}/users/${updateUserId}`,
+      `${process.env.API_URL}/users/deactivate/${userId}`,
       {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(updatePayload),
       },
     );
 
@@ -58,7 +43,7 @@ export async function PATCH(
     }
 
     // Erros genéricos (ex: JSON malformado no body ou queda de conexão)
-    console.error(`[PATCH_USER_ERROR] ID: ${updateUserId}:`, error);
+    console.error(`[PATCH_USER_ERROR] ID: ${userId}:`, error);
     return NextResponse.json(
       { message: "Erro inesperado ao atualizar usuário", statusCode: 500 },
       { status: 500 },
