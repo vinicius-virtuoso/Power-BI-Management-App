@@ -108,20 +108,16 @@ export function NavUser({ isCollapsed }: NavUserProps) {
   };
 
   const onUpdateProfile = async (data: ProfileFormData) => {
-    try {
-      // O hook já trata o toast e a atualização da store interna
-      if (user) {
-        await updateUser(user.id, {
-          name: data.name,
-          email: data.email,
-          password: data.password,
-        });
+    // O hook já trata o toast e a atualização da store interna
+    if (user) {
+      await updateUser(user.id, {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
 
-        setIsProfileOpen(false);
-        reset(data);
-      }
-    } catch {
-      // Erro já tratado pelo toast dentro do hook
+      setIsProfileOpen(false);
+      reset(data);
     }
   };
 
@@ -220,7 +216,7 @@ export function NavUser({ isCollapsed }: NavUserProps) {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}
-                className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
+                className="text-destructive focus:bg-destructive focus:text-accent-foreground cursor-pointer"
               >
                 <LogOut className="mr-2 size-4" />
                 Log out
@@ -285,12 +281,12 @@ export function NavUser({ isCollapsed }: NavUserProps) {
                   )}
                 />
               )}
-              {!isAdmin && (
-                <p className="text-[10px] text-muted-foreground italic">
-                  * Apenas administradores podem editar este campo.
-                </p>
-              )}
             </div>
+            {!isAdmin && (
+              <p className="text-[10px] text-muted-foreground italic">
+                * Apenas administradores podem editar os campos Nome e E-mail.
+              </p>
+            )}
 
             <div className="pt-4 mt-4 border-t space-y-4">
               <div className="flex items-center gap-2 text-primary">

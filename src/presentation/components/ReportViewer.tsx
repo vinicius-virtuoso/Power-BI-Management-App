@@ -28,7 +28,6 @@ const ReportEmbed = ({
       try {
         await loadReport(reportId);
       } catch (e) {
-        // Redirecionamento via window.location no catch para garantir
         window.location.href = "/login";
       }
     };
