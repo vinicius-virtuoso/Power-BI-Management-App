@@ -21,11 +21,11 @@ export const handleGlobalError = (error: unknown) => {
       });
     } else if (status === 404) {
       toast.error("Não encontrado", {
-        description: error.message || "O recurso solicitado não existe.",
+        description: "O recurso solicitado não existe.",
       });
     } else if (status === 409) {
-      toast.warning("Conflito", {
-        description: error.message,
+      toast.warning("Ocorreu um conflito", {
+        description: "O recurso solicitado já existe.",
       });
     } else if (status === 500) {
       toast.error("Erro no servidor", {

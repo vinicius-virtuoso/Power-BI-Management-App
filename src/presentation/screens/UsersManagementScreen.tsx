@@ -174,7 +174,7 @@ export default function UsersManagementScreen() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 bg-card px-4 rounded-xl border shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all h-10">
+            <div className="flex items-center gap-3 bg-card px-4 rounded-md border shadow-sm focus-within:ring-2 focus-within:ring-primary/80 transition-all h-10">
               <Search className="w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Pesquisar por nome ou e-mail..."
@@ -186,7 +186,7 @@ export default function UsersManagementScreen() {
           </div>
 
           {/* TABELA COM SCROLL */}
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col">
+          <div className="rounded-md border bg-card shadow-sm overflow-hidden flex flex-col">
             <div className="overflow-y-auto flex-1 custom-scrollbar">
               <table className="w-full text-sm text-left border-collapse">
                 <thead className="bg-muted/90 backdrop-blur-sm border-b text-muted-foreground sticky top-0 z-10">
@@ -337,6 +337,20 @@ export default function UsersManagementScreen() {
                                   <UserPen className="w-4 h-4 mr-2" /> Editar
                                   Cadastro
                                 </DropdownMenuItem>
+
+                                {isMe || u.role === "ADMIN" ? (
+                                  <DropdownMenuItem disabled={true}>
+                                    <UserPen className="w-4 h-4 mr-2" />{" "}
+                                    Compartilhar Relatórios
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => handleEdit(u)}
+                                  >
+                                    <UserPen className="w-4 h-4 mr-2" />{" "}
+                                    Compartilhar Relatórios
+                                  </DropdownMenuItem>
+                                )}
 
                                 <DropdownMenuItem
                                   onClick={() => handleActivatedUser(u)}

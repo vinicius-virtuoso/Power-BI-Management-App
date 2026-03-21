@@ -3,6 +3,8 @@
 import {
   CheckCircle2,
   ChevronsUpDown,
+  Eye,
+  EyeOff,
   Loader2,
   Lock,
   LogOut,
@@ -65,6 +67,8 @@ export function NavUser({ isCollapsed }: NavUserProps) {
   const { setAuthenticated } = useAuthStore();
   const { user, clearUser } = useUserMeStore();
   const { clearReports } = useReportsStore();
+  const [showPassword, setShowPassword] = useState(false); // Novo estado // Pegamos o usuário logado
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const router = useRouter();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -115,9 +119,13 @@ export function NavUser({ isCollapsed }: NavUserProps) {
         password: data.password,
       });
 
-      setIsProfileOpen(false);
-      reset(data);
+      handleOpenModalProfile();
     }
+  };
+
+  const handleOpenModalProfile = () => {
+    setIsProfileOpen(false);
+    reset();
   };
 
   return (
@@ -225,7 +233,7 @@ export function NavUser({ isCollapsed }: NavUserProps) {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+      <Dialog open={isProfileOpen} onOpenChange={handleOpenModalProfile}>
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -298,17 +306,34 @@ export function NavUser({ isCollapsed }: NavUserProps) {
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="password">Nova Senha</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Mínimo 6 caracteres"
-                    {...register("password", {
-                      minLength: {
-                        value: 6,
-                        message: "A senha deve ter pelo menos 6 caracteres",
-                      },
-                    })}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"} // Alterna o tipo
+                      placeholder="••••••••"
+                      {...register("password")}
+                      className={cn(
+                        "pr-10", // Abre espaço à direita para o ícone
+                        errors.password ? "border-destructive" : "",
+                      )}
+                    />
+                    <Button
+                      type="button" // Essencial para não submeter o formulário
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      <span className="sr-only">
+                        {showPassword ? "Esconder senha" : "Mostrar senha"}
+                      </span>
+                    </Button>
+                  </div>
                   {errors.password && (
                     <p className="text-[10px] text-destructive">
                       {errors.password.message}
@@ -318,17 +343,41 @@ export function NavUser({ isCollapsed }: NavUserProps) {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Repita a nova senha"
-                    {...register("confirmPassword", {
-                      validate: (value) =>
-                        !watchPassword ||
-                        value === watchPassword ||
-                        "As senhas não coincidem",
-                    })}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showPasswordConfirm ? "text" : "password"} // Alterna o tipo
+                      placeholder="Repita a nova senha"
+                      {...register("confirmPassword", {
+                        validate: (value) =>
+                          !watchPassword ||
+                          value === watchPassword ||
+                          "As senhas não coincidem",
+                      })}
+                      className={cn(
+                        "pr-10", // Abre espaço à direita para o ícone
+                        errors.password ? "border-destructive" : "",
+                      )}
+                    />
+                    <Button
+                      type="button" // Essencial para não submeter o formulário
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground"
+                      onClick={() =>
+                        setShowPasswordConfirm(!showPasswordConfirm)
+                      }
+                    >
+                      {showPasswordConfirm ? (
+                        <EyeOff className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      <span className="sr-only">
+                        {showPassword ? "Esconder senha" : "Mostrar senha"}
+                      </span>
+                    </Button>
+                  </div>
                   {errors.confirmPassword && (
                     <p className="text-[10px] text-destructive">
                       {errors.confirmPassword.message}

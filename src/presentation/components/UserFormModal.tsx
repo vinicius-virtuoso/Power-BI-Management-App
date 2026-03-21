@@ -8,8 +8,8 @@ import {
 import { useUserMeStore } from "@/core/store/users/userMeStore";
 import { cn } from "@/shared/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useUsers } from "../hooks/useUsers";
 import { Button } from "./ui/button";
@@ -43,7 +43,9 @@ export default function UserFormModal({
   user,
 }: UserFormModalProps) {
   const { userUpdate, fetchUsers, createUser } = useUsers();
-  const { user: loggedInUser } = useUserMeStore(); // Pegamos o usuário logado
+  const { user: loggedInUser } = useUserMeStore();
+  const [showPassword, setShowPassword] = useState(false); // Novo estado // Pegamos o usuário logado
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false); // Novo estado // Pegamos o usuário logado
 
   const {
     register,
@@ -157,13 +159,34 @@ export default function UserFormModal({
             <Label htmlFor="password">
               {user ? "Nova Senha (opcional)" : "Senha"}
             </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              {...register("password")}
-              className={errors.password ? "border-destructive" : ""}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"} // Alterna o tipo
+                placeholder="••••••••"
+                {...register("password")}
+                className={cn(
+                  "pr-10", // Abre espaço à direita para o ícone
+                  errors.password ? "border-destructive" : "",
+                )}
+              />
+              <Button
+                type="button" // Essencial para não submeter o formulário
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
+                <span className="sr-only">
+                  {showPassword ? "Esconder senha" : "Mostrar senha"}
+                </span>
+              </Button>
+            </div>
             {errors.password && (
               <p className="text-[11px] text-destructive font-medium italic">
                 {errors.password.message}

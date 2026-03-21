@@ -46,11 +46,10 @@ export function useUsers() {
       try {
         const repository = new ApiUsersRepository();
         const useCase = new UpdateUserUseCase(repository);
-        const updatedUser = await useCase.execute(userId, data);
+        const updatedUser = await run(useCase.execute(userId, data));
         toast.success("Perfil atualizado com sucesso!");
         return updatedUser;
       } catch (error: any) {
-        toast.error(error.message || "Falha ao atualizar perfil");
         throw error;
       } finally {
         setIsUpdating(false);
@@ -68,11 +67,11 @@ export function useUsers() {
         const deactivateUseCase = new DeactivateUserUseCase(repository);
 
         if (isCurrentlyActive) {
-          await deactivateUseCase.execute(userId);
-          toast.success("Usuário desativado com sucesso!");
+          await run(deactivateUseCase.execute(userId));
+          toast.info("Usuário desativado com sucesso!");
         } else {
-          await activateUseCase.execute(userId);
-          toast.success("Usuário ativado com sucesso!");
+          await run(activateUseCase.execute(userId));
+          toast.info("Usuário ativado com sucesso!");
         }
 
         await fetchUsers();
@@ -92,12 +91,12 @@ export function useUsers() {
         const repository = new ApiUsersRepository();
         const deleteUseCase = new DeleteUserUseCase(repository);
 
-        await deleteUseCase.execute(userId);
+        await run(deleteUseCase.execute(userId));
         toast.success("Usuário excluído com sucesso!");
 
         await fetchUsers();
       } catch (error: any) {
-        toast.error("Erro ao excluir usuário");
+        throw error;
       } finally {
         setIsUpdating(false);
       }
