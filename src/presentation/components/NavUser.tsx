@@ -251,15 +251,31 @@ export function NavUser({ isCollapsed }: NavUserProps) {
           >
             <div className="space-y-1.5">
               <Label htmlFor="name">Nome completo</Label>
-              <Input
-                id="name"
-                placeholder="Ex: João Silva"
-                {...register("name", { required: "O nome é obrigatório" })}
-              />
-              {errors.name && (
-                <p className="text-[10px] text-destructive font-medium">
-                  {errors.name.message}
-                </p>
+              {isAdmin ? (
+                <>
+                  <Input
+                    id="name"
+                    placeholder="Ex: João Silva"
+                    {...register("name", { required: "O nome é obrigatório" })}
+                  />
+                  {errors.name && (
+                    <p className="text-[10px] text-destructive font-medium">
+                      {errors.name.message}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Input
+                    id="name"
+                    disabled={!isAdmin}
+                    defaultValue={user?.name}
+                    className={cn(
+                      !isAdmin &&
+                        "bg-muted/50 grayscale opacity-80 cursor-not-allowed",
+                    )}
+                  />
+                </>
               )}
             </div>
 
@@ -391,7 +407,7 @@ export function NavUser({ isCollapsed }: NavUserProps) {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setIsProfileOpen(false)}
+                onClick={handleOpenModalProfile}
                 disabled={isSubmitting}
               >
                 Cancelar
