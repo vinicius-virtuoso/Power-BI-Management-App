@@ -2,7 +2,14 @@ import { ButtonBack } from "@/presentation/components/ButtonBack";
 import { Footer } from "@/presentation/components/Footer";
 import { Button } from "@/presentation/components/ui/button";
 import { FileSearch } from "lucide-react";
+import { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Pagina não encontrada | PBI Dimas",
+  description: "Você está perdido no espaço, teleporte para base",
+  robots: { index: false },
+};
 
 export default function NotFound() {
   return (
