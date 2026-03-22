@@ -3,7 +3,7 @@ import { Metadata } from "next";
 
 // SEO e metadados ficam aqui, pois são específicos do Next.js
 export const metadata: Metadata = {
-  title: "Login | Meu App Incrível",
+  title: "Login | PBI Dimas",
   description: "Faça login para acessar sua conta.",
 };
 
