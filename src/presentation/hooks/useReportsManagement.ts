@@ -110,11 +110,21 @@ export function useReportsManagement() {
 
   const toggleReportActive = useCallback(async (report: ReportProps) => {
     setIsUpdating(report.id);
+
+    // ── Optimistic update ──────────────────────────────────────────────────
+    // Inverte o isActive localmente antes da resposta da API
+    setReports((prev) =>
+      prev.map((r) =>
+        r.id === report.id ? { ...r, isActive: !report.isActive } : r,
+      ),
+    );
+
     try {
       const updated = report.isActive
         ? await deactivateReportUseCase.execute(report.id)
         : await activateReportUseCase.execute(report.id);
 
+      // Confirma com os dados reais retornados pela API
       setReports((prev) =>
         prev.map((r) => (r.id === report.id ? { ...r, ...updated } : r)),
       );
@@ -123,6 +133,13 @@ export function useReportsManagement() {
         `Relatório ${updated.isActive ? "ativado" : "desativado"} com sucesso.`,
       );
     } catch (error) {
+      // ── Rollback ──────────────────────────────────────────────────────────
+      // Reverte para o estado original se a API falhar
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === report.id ? { ...r, isActive: report.isActive } : r,
+        ),
+      );
       handleGlobalError(error);
     } finally {
       setIsUpdating(null);
@@ -146,7 +163,7 @@ export function useReportsManagement() {
 
   const runPolling = useCallback(
     async (reportId: string, previousLastUpdate: Date | null | undefined) => {
-      const MAX_ATTEMPTS = 60;
+      const MAX_ATTEMPTS = 12;
       const INTERVAL_MS = 5000;
 
       try {

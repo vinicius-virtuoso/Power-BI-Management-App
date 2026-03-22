@@ -50,6 +50,9 @@ import {
   TooltipTrigger,
 } from "../components/ui/tooltip";
 
+import { REPORT_SORT_OPTIONS, SortSelect } from "../components/SortSelect";
+import { useSortedReports } from "../hooks/useSortedReports";
+
 // ─── Componente de visualização de JSON formatado ─────────────────────────────
 
 function JsonViewer({ value }: { value: unknown }) {
@@ -142,6 +145,12 @@ export default function ReportsManagementScreen() {
     refreshDataset,
   } = useReportsManagement();
 
+  const {
+    sorted: sortedReports,
+    sortKey,
+    setSortKey,
+  } = useSortedReports(filtered, scheduleMap);
+
   const [selectedReport, setSelectedReport] = useState<ReportProps | null>(
     null,
   );
@@ -217,14 +226,20 @@ export default function ReportsManagementScreen() {
               </div>
             </div>
 
-            {/* Busca */}
-            <div className="flex items-center gap-3 bg-card px-4 rounded-md border shadow-sm focus-within:ring-2 focus-within:ring-primary/80 transition-all h-10">
-              <Search className="w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Pesquisar relatório..."
-                className="border-none shadow-none focus-visible:ring-0 bg-transparent h-full text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+            <div className="flex items-center gap-3">
+              <div className="flex flex-1 items-center gap-3 bg-card px-4 rounded-md border shadow-sm focus-within:ring-2 focus-within:ring-primary/80 transition-all h-10">
+                <Search className="w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar relatório..."
+                  className="border-none shadow-none focus-visible:ring-0 bg-transparent h-full text-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <SortSelect
+                value={sortKey}
+                onChange={setSortKey}
+                options={REPORT_SORT_OPTIONS}
               />
             </div>
           </div>
@@ -255,7 +270,7 @@ export default function ReportsManagementScreen() {
                         </div>
                       </td>
                     </tr>
-                  ) : filtered.length === 0 ? (
+                  ) : sortedReports.length === 0 ? (
                     <tr>
                       <td
                         colSpan={6}
@@ -265,7 +280,7 @@ export default function ReportsManagementScreen() {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((report) => {
+                    sortedReports.map((report) => {
                       const isBeingUpdated = isUpdating === report.id;
                       const isBeingRefreshed = isRefreshingId(report.id);
 

@@ -1,39 +1,31 @@
-import { ApiUsersRepository } from "@/core/data/repositories/users/ApiUsersRepository";
-import { ActivateUserUseCase } from "@/core/domain/use-cases/ActivateUserUseCase";
-import { CreateUserUseCase } from "@/core/domain/use-cases/CreateUserUseCase";
-import { DeactivateUserUseCase } from "@/core/domain/use-cases/DeactivateUserUseCase";
-import { DeleteUserUseCase } from "@/core/domain/use-cases/DeleteUserUseCase";
-import { UpdateUserUseCase } from "@/core/domain/use-cases/UpdateUserUseCase";
+import {
+  activateUserUseCase,
+  createUserUseCase,
+  deactivateUserUseCase,
+  deleteUserUseCase,
+  updateUserUseCase,
+} from "@/core/container";
 import { useUsersStore } from "@/core/store/users/useUsersStore";
-import { useUserMeStore } from "@/core/store/users/userMeStore";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { useAsync } from "./useAsync";
 
 export function useUsers() {
   const usersData = useUsersStore((state) => state.usersData);
-  const isLoading = useUsersStore((state) => state.isLoading);
   const error = useUsersStore((state) => state.error);
 
   const [isUpdating, setIsUpdating] = useState(false);
-  const { setUser } = useUserMeStore();
 
   const fetchUsers = useUsersStore((state) => state.fetchUsers);
-  const removeUserFromList = useUsersStore((state) => state.removeUserFromList);
+  const updateUserInList = useUsersStore((state) => state.updateUserInList);
 
   const { run, loading } = useAsync();
 
-  // Usamos useCallback para que a função seja estável e não cause re-renders infinitos em useEffects
   const createUser = useCallback(
     async (data: any) => {
-      const repository = new ApiUsersRepository();
-      const useCase = new CreateUserUseCase(repository);
-
-      // O 'run' executa, se der erro ele chama o toast e retorna null
-      const result = await run(useCase.execute(data));
-
+      const result = await run(createUserUseCase.execute(data));
       if (result) {
-        await fetchUsers(); // Só atualiza se deu certo
+        await fetchUsers();
       }
       return result;
     },
@@ -52,9 +44,7 @@ export function useUsers() {
     ) => {
       setIsUpdating(true);
       try {
-        const repository = new ApiUsersRepository();
-        const useCase = new UpdateUserUseCase(repository);
-        const updatedUser = await run(useCase.execute(userId, data));
+        const updatedUser = await run(updateUserUseCase.execute(userId, data));
         await fetchUsers();
         toast.success("Perfil atualizado com sucesso!");
         return updatedUser;
@@ -70,39 +60,32 @@ export function useUsers() {
   const userActivate = useCallback(
     async (userId: string, isCurrentlyActive: boolean) => {
       setIsUpdating(true);
-      try {
-        const repository = new ApiUsersRepository();
-        const activateUseCase = new ActivateUserUseCase(repository);
-        const deactivateUseCase = new DeactivateUserUseCase(repository);
+      updateUserInList(userId, { isActive: !isCurrentlyActive });
 
+      try {
         if (isCurrentlyActive) {
-          await run(deactivateUseCase.execute(userId));
+          await run(deactivateUserUseCase.execute(userId));
           toast.info("Usuário desativado com sucesso!");
         } else {
-          await run(activateUseCase.execute(userId));
+          await run(activateUserUseCase.execute(userId));
           toast.info("Usuário ativado com sucesso!");
         }
-
-        await fetchUsers();
       } catch (error: any) {
+        updateUserInList(userId, { isActive: isCurrentlyActive });
         toast.error("Erro ao alterar status do usuário");
       } finally {
         setIsUpdating(false);
       }
     },
-    [fetchUsers],
+    [updateUserInList],
   );
 
   const userDelete = useCallback(
     async (userId: string) => {
       setIsUpdating(true);
       try {
-        const repository = new ApiUsersRepository();
-        const deleteUseCase = new DeleteUserUseCase(repository);
-
-        await run(deleteUseCase.execute(userId));
+        await run(deleteUserUseCase.execute(userId));
         toast.success("Usuário excluído com sucesso!");
-
         await fetchUsers();
       } catch (error: any) {
         throw error;

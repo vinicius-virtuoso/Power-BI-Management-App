@@ -27,6 +27,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { toast } from "sonner";
 import ShareReportsModal from "../components/ShareReportsModal";
+import { SortSelect, USER_SORT_OPTIONS } from "../components/SortSelect";
 import UserFormModal from "../components/UserFormModal";
 import {
   AlertDialog,
@@ -49,6 +50,7 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { Input } from "../components/ui/input";
+import { useSortedUsers } from "../hooks/useSortedUsers";
 import { useUsers } from "../hooks/useUsers";
 
 export default function UsersManagementScreen() {
@@ -94,6 +96,12 @@ export default function UsersManagementScreen() {
         u.email.toLowerCase().includes(lowerSearch),
     );
   }, [searchTerm, usersData?.users]);
+
+  const {
+    sorted: sortedUsers,
+    sortKey,
+    setSortKey,
+  } = useSortedUsers(filteredUsers);
 
   // --- HANDLERS ---
   const handleEdit = (user: UserProps) => {
@@ -177,13 +185,20 @@ export default function UsersManagementScreen() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 bg-card px-4 rounded-md border shadow-sm focus-within:ring-2 focus-within:ring-primary/80 transition-all h-10">
-              <Search className="w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Pesquisar por nome ou e-mail..."
-                className="border-none shadow-none focus-visible:ring-0 bg-transparent h-full text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+            <div className="flex items-center gap-3">
+              <div className="flex flex-1 items-center gap-3 bg-card px-4 rounded-md border shadow-sm focus-within:ring-2 focus-within:ring-primary/80 transition-all h-10">
+                <Search className="w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar por nome ou e-mail..."
+                  className="border-none shadow-none focus-visible:ring-0 bg-transparent h-full text-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <SortSelect
+                value={sortKey}
+                onChange={setSortKey}
+                options={USER_SORT_OPTIONS}
               />
             </div>
           </div>
@@ -212,7 +227,7 @@ export default function UsersManagementScreen() {
                         </div>
                       </td>
                     </tr>
-                  ) : filteredUsers.length === 0 ? (
+                  ) : sortedUsers.length === 0 ? (
                     <tr>
                       <td
                         colSpan={6}
@@ -222,7 +237,7 @@ export default function UsersManagementScreen() {
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((u) => {
+                    sortedUsers.map((u) => {
                       const isMe = u.id === loggedInUser?.id;
 
                       return (

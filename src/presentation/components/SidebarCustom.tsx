@@ -2,11 +2,12 @@
 
 import { useUserMeStore } from "@/core/store/users/userMeStore";
 import { cn } from "@/shared/utils";
-import { BarChart3, Loader2, Search } from "lucide-react";
+import { BarChart3, Search } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
 import { ReportData } from "../screens/DashboardScreen";
 import { NavUser } from "./NavUser";
 import ReportCard from "./ReportCard";
+import { SidebarReportsSkeleton } from "./SidebarReportsSkeleton";
 import { Input } from "./ui/input";
 import {
   Sidebar,
@@ -17,7 +18,6 @@ import {
 } from "./ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
-// Tipagem das Props para aceitar o controle do pai (Dashboard)
 interface SidebarCustomProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -90,9 +90,10 @@ export function SidebarCustom({
       <SidebarContent className="no-scrollbar group-data-[collapsible=icon]:overflow-y-auto">
         <div className="px-3 py-2 space-y-1.5 mt-2">
           {isLoadingReports ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            </div>
+            // Skeleton só aparece na visão expandida — na collapsed não faz sentido
+            isCollapsed ? null : (
+              <SidebarReportsSkeleton count={6} />
+            )
           ) : isCollapsed ? (
             /* VISÃO ICON (COLLAPSED) */
             filteredReports.map((report) => (
@@ -101,11 +102,10 @@ export function SidebarCustom({
                   <button
                     onClick={() => onSelect(report.id)}
                     className={cn(
-                      "w-full p-2  flex items-center justify-center transition-all",
+                      "w-full p-2 flex items-center justify-center transition-all",
                       selectedId === report.id
                         ? "bg-primary/10"
                         : "hover:bg-secondary",
-
                       isCollapsed === true ? "rounded-xs" : "rounded-xl",
                     )}
                     title={report.title}

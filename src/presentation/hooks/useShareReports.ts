@@ -1,20 +1,16 @@
-import { ApiReportsRepository } from "@/core/data/repositories/reports/ApiReportsRepository";
+import {
+  getAllReportsUseCase,
+  revokeReportUseCase,
+  shareReportUseCase,
+} from "@/core/container";
 import { ReportProps } from "@/core/domain/entities/report";
 import { UserProps } from "@/core/domain/entities/user";
-import { GetAllReportsUseCase } from "@/core/domain/use-cases/GetAllReportsUseCase";
-import { RevokeReportUseCase } from "@/core/domain/use-cases/RevokeReportUseCase";
-import { ShareReportUseCase } from "@/core/domain/use-cases/ShareReportUseCase";
 import { useUserMeStore } from "@/core/store/users/userMeStore";
 import { handleGlobalError } from "@/presentation/utils/errorHandler";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 // ─── Instâncias únicas ────────────────────────────────────────────────────────
-
-const repository = new ApiReportsRepository();
-const getAllReportsUseCase = new GetAllReportsUseCase(repository);
-const shareReportUseCase = new ShareReportUseCase(repository);
-const revokeReportUseCase = new RevokeReportUseCase(repository);
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
