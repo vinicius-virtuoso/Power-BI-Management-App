@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ReportViewer from "../components/ReportViewer";
 import { SidebarCustom } from "../components/SidebarCustom";
-import { useSidebar } from "../components/ui/sidebar";
+import { SidebarTrigger, useSidebar } from "../components/ui/sidebar";
 
 export type ReportData = {
   id: string;
@@ -175,7 +175,11 @@ export function DashboardScreen() {
               toggleFavorite={toggleFavorite}
             />
 
-            <div className="flex flex-1 shadow-md w-full h-full overflow-hidden border bg-card -mr-6">
+            <div className="flex flex-1 shadow-md w-full h-full overflow-hidden border bg-card -mr-6 relative">
+              <div className="absolute top-3 left-3 z-10 md:hidden">
+                <SidebarTrigger className="h-8 w-8 bg-card border shadow-sm rounded-md" />
+              </div>
+
               <ReportViewer
                 report={currentReport}
                 isFavorite={currentReport?.id === favoriteId}
