@@ -1,11 +1,6 @@
-"use client";
-
 import { LoginForm } from "../components/LoginForm";
-import { useLoginController } from "../hooks/useLoginController";
 
 export function LoginScreen() {
-  const { handleLogin, isLoading } = useLoginController();
-
   return (
     <div className="flex min-h-screen bg-background font-body">
       <section className="hidden lg:flex lg:w-[55%] relative overflow-hidden items-center justify-center bg-linear-to-br from-primary/10 via-accent/5 to-primary/5">
@@ -37,7 +32,7 @@ export function LoginScreen() {
 
       <section className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-card">
         <div className="w-full max-w-100 space-y-8">
-          <LoginForm onSubmit={handleLogin} isLoading={isLoading} />
+          <LoginForm />
         </div>
       </section>
     </div>

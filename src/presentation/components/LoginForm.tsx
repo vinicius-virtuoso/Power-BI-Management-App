@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useLoginController } from "../hooks/useLoginController";
 import { Footer } from "./Footer";
 import { Button } from "./ui/button";
 import {
@@ -25,8 +26,9 @@ interface LoginFormProps {
   isLoading: boolean;
 }
 
-export function LoginForm({ onSubmit, isLoading }: LoginFormProps) {
+export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const { handleLogin, isLoading } = useLoginController();
 
   const form = useForm<LoginFormDataType>({
     resolver: zodResolver(loginSchema),
@@ -36,7 +38,7 @@ export function LoginForm({ onSubmit, isLoading }: LoginFormProps) {
   return (
     <div className="w-full space-y-8">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-5">
           <FormField
             control={form.control}
             name="email"

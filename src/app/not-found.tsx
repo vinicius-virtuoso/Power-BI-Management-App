@@ -1,14 +1,10 @@
-"use client";
-
+import { ButtonBack } from "@/presentation/components/ButtonBack";
 import { Footer } from "@/presentation/components/Footer";
 import { Button } from "@/presentation/components/ui/button";
-import { ArrowLeft, FileSearch } from "lucide-react";
+import { FileSearch } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export default function NotFound() {
-  const router = useRouter();
-
   return (
     <main className="flex min-h-screen h-screen flex-col items-center justify-between bg-background px-6 text-center font-body">
       <div className="flex flex-col items-center justify-center h-[95%]">
@@ -33,14 +29,7 @@ export default function NotFound() {
         </p>
 
         <div className="flex flex-col gap-4 sm:flex-row">
-          <Button
-            variant="outline"
-            className="h-12 px-8 rounded-xl font-bold"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft size={18} />
-            Voltar
-          </Button>
+          <ButtonBack />
 
           <Button
             asChild
