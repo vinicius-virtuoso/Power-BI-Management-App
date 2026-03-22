@@ -14,7 +14,7 @@ import {
   UserPen,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { useAuthStore } from "@/core/store/auth/authStore";
@@ -65,7 +65,7 @@ interface NavUserProps {
 export function NavUser({ isCollapsed }: NavUserProps) {
   const { isMobile } = useSidebar();
   const { setAuthenticated } = useAuthStore();
-  const { user, clearUser } = useUserMeStore();
+  const { user, clearUser, fetchUserMe } = useUserMeStore();
   const { clearReports } = useReportsStore();
   const [showPassword, setShowPassword] = useState(false); // Novo estado // Pegamos o usuário logado
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
@@ -111,7 +111,6 @@ export function NavUser({ isCollapsed }: NavUserProps) {
   };
 
   const onUpdateProfile = async (data: ProfileFormData) => {
-    // O hook já trata o toast e a atualização da store interna
     if (user) {
       await userUpdate(user.id, {
         name: data.name,
@@ -119,14 +118,20 @@ export function NavUser({ isCollapsed }: NavUserProps) {
         password: data.password,
       });
 
+      await fetchUserMe();
       handleOpenModalProfile();
     }
   };
 
   const handleOpenModalProfile = () => {
     setIsProfileOpen(false);
-    reset();
   };
+
+  useEffect(() => {
+    if (user) {
+      reset(user);
+    }
+  }, [isProfileOpen]);
 
   return (
     <>

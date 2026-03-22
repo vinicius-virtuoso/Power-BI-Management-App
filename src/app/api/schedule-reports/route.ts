@@ -3,13 +3,7 @@ import { AppError } from "@/core/domain/errors/AppError";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-// Mantém o GET existente + adiciona o DELETE
-
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ reportId: string }> },
-) {
-  const { reportId } = await params;
+export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get("session_token")?.value;
 
@@ -21,10 +15,10 @@ export async function GET(
   }
 
   try {
-    const data = await apiFetch(
-      `${process.env.API_URL}/reports/report/${reportId}`,
-      { method: "GET", headers: { Authorization: `Bearer ${token}` } },
-    );
+    const data = await apiFetch(`${process.env.API_URL}/schedule-reports`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return NextResponse.json(data);
   } catch (error: unknown) {
     if (error instanceof AppError) {
@@ -34,17 +28,13 @@ export async function GET(
       );
     }
     return NextResponse.json(
-      { message: "Erro inesperado ao buscar relatório", statusCode: 500 },
+      { message: "Erro ao listar agendamentos", statusCode: 500 },
       { status: 500 },
     );
   }
 }
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ reportId: string }> },
-) {
-  const { reportId } = await params;
+export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("session_token")?.value;
 
@@ -56,11 +46,13 @@ export async function DELETE(
   }
 
   try {
-    await apiFetch(`${process.env.API_URL}/reports/report/${reportId}`, {
-      method: "DELETE",
+    const body = await request.json();
+    const data = await apiFetch(`${process.env.API_URL}/schedule-reports`, {
+      method: "POST",
       headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
     });
-    return new NextResponse(null, { status: 204 });
+    return NextResponse.json(data, { status: 201 });
   } catch (error: unknown) {
     if (error instanceof AppError) {
       return NextResponse.json(
@@ -69,7 +61,7 @@ export async function DELETE(
       );
     }
     return NextResponse.json(
-      { message: "Erro ao excluir relatório", statusCode: 500 },
+      { message: "Erro ao criar agendamento", statusCode: 500 },
       { status: 500 },
     );
   }

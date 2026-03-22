@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 // ─── Rotas que exigem role ADMIN ──────────────────────────────────────────────
 
-const ADMIN_ROUTES = ["/dashboard/users-management"];
+const ADMIN_ROUTES = [
+  "/dashboard/users-management",
+  "/dashboard/reports-management", // ← novo
+];
 
 // ─── Decodifica o payload do JWT sem verificar a assinatura ──────────────────
 // Seguro para uso no middleware pois a assinatura já é validada pelo backend

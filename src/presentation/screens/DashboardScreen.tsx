@@ -62,8 +62,14 @@ export function DashboardScreen() {
   }, [reportsList, favoriteId]);
 
   const filteredReports = useMemo(() => {
+    const normalize = (str: string) =>
+      str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    const q = normalize(search);
     return [...reportsAll]
-      .filter((r) => r.title.toLowerCase().includes(search.toLowerCase()))
+      .filter((r) => normalize(r.title ?? "").includes(q))
       .sort((a, b) => {
         if (a.isFavorite !== b.isFavorite)
           return Number(b.isFavorite) - Number(a.isFavorite);

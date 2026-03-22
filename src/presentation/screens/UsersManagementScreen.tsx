@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Ban,
   ChevronLeft,
+  CircleFadingPlus,
   Clock,
   Loader2,
   MoreHorizontal,
@@ -25,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { toast } from "sonner";
+import ShareReportsModal from "../components/ShareReportsModal";
 import UserFormModal from "../components/UserFormModal";
 import {
   AlertDialog,
@@ -65,6 +67,7 @@ export default function UsersManagementScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProps | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   // --- CARREGAMENTO INICIAL COM TRATAMENTO ---
   useEffect(() => {
@@ -345,9 +348,12 @@ export default function UsersManagementScreen() {
                                   </DropdownMenuItem>
                                 ) : (
                                   <DropdownMenuItem
-                                    onClick={() => handleEdit(u)}
+                                    onClick={() => {
+                                      setSelectedUser(u);
+                                      setIsShareModalOpen(true);
+                                    }}
                                   >
-                                    <UserPen className="w-4 h-4 mr-2" />{" "}
+                                    <CircleFadingPlus className="w-4 h-4 mr-2" />{" "}
                                     Compartilhar Relatórios
                                   </DropdownMenuItem>
                                 )}
@@ -395,6 +401,14 @@ export default function UsersManagementScreen() {
           </div>
 
           {/* MODAIS */}
+          <ShareReportsModal
+            isOpen={isShareModalOpen}
+            onClose={() => {
+              setIsShareModalOpen(false);
+              setSelectedUser(null);
+            }}
+            user={selectedUser}
+          />
           <UserFormModal
             isOpen={isModalOpen}
             onClose={() => {

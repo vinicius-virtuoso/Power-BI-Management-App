@@ -41,12 +41,21 @@ export function useUsers() {
   );
 
   const userUpdate = useCallback(
-    async (userId: string, data: any) => {
+    async (
+      userId: string,
+      data: {
+        name?: string;
+        email?: string;
+        password?: string;
+        role?: "USER" | "ADMIN";
+      },
+    ) => {
       setIsUpdating(true);
       try {
         const repository = new ApiUsersRepository();
         const useCase = new UpdateUserUseCase(repository);
         const updatedUser = await run(useCase.execute(userId, data));
+        await fetchUsers();
         toast.success("Perfil atualizado com sucesso!");
         return updatedUser;
       } catch (error: any) {
