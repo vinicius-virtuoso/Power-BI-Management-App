@@ -164,7 +164,7 @@ const ReportViewer = ({ report, isFavorite }: ReportViewerProps) => {
             animate={{ height: 44, opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="flex items-center justify-between px-4 border-b bg-card shrink-0 overflow-hidden"
+            className="flex items-center justify-between px-4 border-b bg-card shrink-0 overflow-hidden  backdrop-blur-sm text-muted-foreground"
           >
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold truncate max-w-[400px]">

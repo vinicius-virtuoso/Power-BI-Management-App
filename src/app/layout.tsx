@@ -1,9 +1,16 @@
 import { TooltipProvider } from "@/presentation/components/ui/tooltip";
 import { cn } from "@/shared/utils";
 import { AnimatePresence } from "framer-motion";
+import { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
+
+export const metadata: Metadata = {
+  icons: {
+    icon: "/favicon.svg",
+  },
+};
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 

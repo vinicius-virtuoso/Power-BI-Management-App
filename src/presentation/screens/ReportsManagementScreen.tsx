@@ -2,6 +2,7 @@
 
 import { ReportProps } from "@/core/domain/entities/report";
 import { useReportsManagement } from "@/presentation/hooks/useReportsManagement";
+import { tableContainerVariants, tableRowVariants } from "@/shared/animations";
 import { cn } from "@/shared/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -22,6 +23,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ScheduleReportModal from "../components/ScheduleReportModal";
+import { REPORT_SORT_OPTIONS, SortSelect } from "../components/SortSelect";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,11 +51,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "../components/ui/tooltip";
-
-import { REPORT_SORT_OPTIONS, SortSelect } from "../components/SortSelect";
 import { useSortedReports } from "../hooks/useSortedReports";
 
-// ─── Componente de visualização de JSON formatado ─────────────────────────────
+// ─── JSON Viewer ──────────────────────────────────────────────────────────────
 
 function JsonViewer({ value }: { value: unknown }) {
   const parsed: Record<string, unknown> =
@@ -127,6 +127,8 @@ function JsonViewer({ value }: { value: unknown }) {
   );
 }
 
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function ReportsManagementScreen() {
   const router = useRouter();
   const {
@@ -157,8 +159,6 @@ export default function ReportsManagementScreen() {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
-  // ─── Handlers ────────────────────────────────────────────────────────────────
-
   const handleOpenSchedule = (report: ReportProps) => {
     setSelectedReport(report);
     setIsScheduleModalOpen(true);
@@ -175,8 +175,6 @@ export default function ReportsManagementScreen() {
     setIsDeleteAlertOpen(false);
     setSelectedReport(null);
   };
-
-  // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -260,7 +258,14 @@ export default function ReportsManagementScreen() {
                     <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+
+                {/* ── MUDANÇA 1: tbody → motion.tbody com variantes de stagger ── */}
+                <motion.tbody
+                  className="divide-y divide-border"
+                  variants={tableContainerVariants}
+                  initial="hidden"
+                  animate="show"
+                >
                   {isLoading ? (
                     <tr>
                       <td colSpan={6} className="h-64 text-center">
@@ -280,246 +285,255 @@ export default function ReportsManagementScreen() {
                       </td>
                     </tr>
                   ) : (
-                    sortedReports.map((report) => {
-                      const isBeingUpdated = isUpdating === report.id;
-                      const isBeingRefreshed = isRefreshingId(report.id);
+                    /* ── MUDANÇA 2: AnimatePresence + motion.tr em cada linha ── */
+                    <AnimatePresence mode="sync" initial={false}>
+                      {sortedReports.map((report) => {
+                        const isBeingUpdated = isUpdating === report.id;
+                        const isBeingRefreshed = isRefreshingId(report.id);
 
-                      return (
-                        <tr
-                          key={report.id}
-                          className="transition-colors hover:bg-muted/20"
-                        >
-                          {/* Nome */}
-                          <td className="p-4">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-3 cursor-default">
-                                  <div className="w-8 h-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                    <LayoutTemplate className="w-4 h-4" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="font-semibold truncate max-w-[220px]">
-                                      {report.name}
-                                    </p>
-                                    <p className="text-[11px] text-muted-foreground truncate max-w-[220px]">
-                                      {report.datasetId}
-                                    </p>
-                                  </div>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent
-                                side="top"
-                                className="text-xs max-w-72"
-                              >
-                                {report.name}
-                              </TooltipContent>
-                            </Tooltip>
-                          </td>
-
-                          {/* Status */}
-                          <td className="p-4">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "gap-1.5 h-6 px-2 font-medium shadow-none text-[10px]",
-                                report.isActive
-                                  ? "bg-green-50 text-green-700 border-green-200"
-                                  : "bg-red-50 text-red-700 border-red-200",
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  "w-1.5 h-1.5 rounded-full",
-                                  report.isActive
-                                    ? "bg-green-500 animate-pulse"
-                                    : "bg-red-500",
-                                )}
-                              />
-                              {report.isActive ? "Ativo" : "Inativo"}
-                            </Badge>
-                          </td>
-
-                          {/* Última atualização */}
-                          <td className="p-4 hidden md:table-cell text-xs text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-3 h-3 shrink-0" />
-                              {report.lastUpdate
-                                ? formatDistanceToNow(
-                                    new Date(report.lastUpdate),
-                                    { addSuffix: true, locale: ptBR },
-                                  )
-                                : "Nunca atualizado"}
-                            </div>
-                          </td>
-
-                          {/* Agendamento */}
-                          <td className="p-4 hidden lg:table-cell">
-                            {(() => {
-                              const schedule = scheduleMap[report.id];
-                              if (!schedule) {
-                                return (
-                                  <span className="text-[11px] text-muted-foreground">
-                                    —
-                                  </span>
-                                );
-                              }
-                              return (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="w-fit">
-                                      <Badge
-                                        variant="outline"
-                                        className={cn(
-                                          "gap-1.5 h-6 px-2 font-medium shadow-none text-[10px] cursor-default",
-                                          schedule.isActive
-                                            ? "bg-blue-50 text-blue-700 border-blue-200"
-                                            : "bg-muted text-muted-foreground border-border",
-                                        )}
-                                      >
-                                        <CalendarClock className="w-3 h-3" />
-                                        {schedule.isActive
-                                          ? "Agendado"
-                                          : "Pausado"}
-                                      </Badge>
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent
-                                    side="top"
-                                    className="text-xs space-y-1 max-w-56 flex flex-col"
-                                  >
-                                    <p className="font-semibold text-accent-foreground">
-                                      Horários comuns
-                                    </p>
-                                    <p>
-                                      {schedule.hoursCommon.length > 0
-                                        ? schedule.hoursCommon
-                                            .map((h) => `${h}h`)
-                                            .join(", ")
-                                        : "—"}
-                                    </p>
-                                    {schedule.isClosingDays && (
-                                      <>
-                                        <p className="font-semibold text-accent-foreground pt-1">
-                                          Dias de fechamento
-                                        </p>
-                                        <p>{schedule.closingDays.join(", ")}</p>
-                                        <p className="font-semibold text-accent-foreground pt-1">
-                                          Horários de fechamento
-                                        </p>
-                                        <p>
-                                          {schedule.hoursClosingDays
-                                            .map((h) => `${h}h`)
-                                            .join(", ")}
-                                        </p>
-                                      </>
-                                    )}
-                                  </TooltipContent>
-                                </Tooltip>
-                              );
-                            })()}
-                          </td>
-
-                          {/* Erros */}
-                          <td className="p-4 hidden lg:table-cell">
-                            {report.errors ? (
+                        return (
+                          <motion.tr
+                            key={report.id}
+                            variants={tableRowVariants}
+                            initial="hidden"
+                            animate="show"
+                            exit="exit"
+                            layout
+                            className="transition-colors hover:bg-muted/20"
+                          >
+                            {/* Nome */}
+                            <td className="p-4">
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <div className="flex items-center gap-1.5 text-red-600 cursor-default w-fit">
-                                    <AlertTriangle className="w-3.5 h-3.5" />
-                                    <span className="text-[11px] font-medium">
-                                      Com erros
-                                    </span>
+                                  <div className="flex items-center gap-3 cursor-default">
+                                    <div className="w-8 h-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                      <LayoutTemplate className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-semibold truncate max-w-[220px]">
+                                        {report.name}
+                                      </p>
+                                      <p className="text-[11px] text-muted-foreground truncate max-w-[220px]">
+                                        {report.datasetId}
+                                      </p>
+                                    </div>
                                   </div>
                                 </TooltipTrigger>
                                 <TooltipContent
                                   side="top"
-                                  className="p-0 w-80 border-slate-700 bg-slate-900"
+                                  className="text-xs max-w-72"
                                 >
-                                  <ScrollArea className="max-h-56 rounded-md">
-                                    <div className="p-1">
-                                      <JsonViewer value={report.errors} />
-                                    </div>
-                                  </ScrollArea>
+                                  {report.name}
                                 </TooltipContent>
                               </Tooltip>
-                            ) : (
-                              <span className="text-[11px] text-muted-foreground">
-                                —
-                              </span>
-                            )}
-                          </td>
+                            </td>
 
-                          {/* Ações */}
-                          <td className="p-4 text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 border hover:bg-background"
-                                  disabled={isBeingUpdated || isBeingRefreshed}
-                                >
-                                  {isBeingUpdated || isBeingRefreshed ? (
-                                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                                  ) : (
-                                    <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                                  )}
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-52">
-                                <DropdownMenuLabel className="text-[9px] font-bold text-muted-foreground uppercase">
-                                  Opções
-                                </DropdownMenuLabel>
-
-                                {/* Refresh manual */}
-                                <DropdownMenuItem
-                                  onClick={() => refreshDataset(report.id)}
-                                >
-                                  <RefreshCw className="w-4 h-4 mr-2" />
-                                  Atualizar dataset
-                                </DropdownMenuItem>
-
-                                {/* Agendamento */}
-                                <DropdownMenuItem
-                                  onClick={() => handleOpenSchedule(report)}
-                                >
-                                  <CalendarClock className="w-4 h-4 mr-2" />
-                                  Configurar agendamento
-                                </DropdownMenuItem>
-
-                                {/* Ativar / Desativar */}
-                                <DropdownMenuItem
-                                  onClick={() => toggleReportActive(report)}
-                                  className={
+                            {/* Status */}
+                            <td className="p-4">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "gap-1.5 h-6 px-2 font-medium shadow-none text-[10px]",
+                                  report.isActive
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-red-50 text-red-700 border-red-200",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
                                     report.isActive
-                                      ? "text-orange-600"
-                                      : "text-green-600"
-                                  }
-                                >
-                                  <Ban className="w-4 h-4 mr-2" />
-                                  {report.isActive
-                                    ? "Desativar relatório"
-                                    : "Ativar relatório"}
-                                </DropdownMenuItem>
+                                      ? "bg-green-500 animate-pulse"
+                                      : "bg-red-500",
+                                  )}
+                                />
+                                {report.isActive ? "Ativo" : "Inativo"}
+                              </Badge>
+                            </td>
 
-                                <DropdownMenuSeparator />
+                            {/* Última atualização */}
+                            <td className="p-4 hidden md:table-cell text-xs text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3 h-3 shrink-0" />
+                                {report.lastUpdate
+                                  ? formatDistanceToNow(
+                                      new Date(report.lastUpdate),
+                                      {
+                                        addSuffix: true,
+                                        locale: ptBR,
+                                      },
+                                    )
+                                  : "Nunca atualizado"}
+                              </div>
+                            </td>
 
-                                {/* Deletar */}
-                                <DropdownMenuItem
-                                  className="text-red-600 focus:bg-destructive focus:text-accent-foreground"
-                                  onClick={() => handleOpenDelete(report)}
+                            {/* Agendamento */}
+                            <td className="p-4 hidden lg:table-cell">
+                              {(() => {
+                                const schedule = scheduleMap[report.id];
+                                if (!schedule) {
+                                  return (
+                                    <span className="text-[11px] text-muted-foreground">
+                                      —
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="w-fit">
+                                        <Badge
+                                          variant="outline"
+                                          className={cn(
+                                            "gap-1.5 h-6 px-2 font-medium shadow-none text-[10px] cursor-default",
+                                            schedule.isActive
+                                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                                              : "bg-muted text-muted-foreground border-border",
+                                          )}
+                                        >
+                                          <CalendarClock className="w-3 h-3" />
+                                          {schedule.isActive
+                                            ? "Agendado"
+                                            : "Pausado"}
+                                        </Badge>
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                      side="top"
+                                      className="text-xs space-y-1 max-w-56 flex flex-col"
+                                    >
+                                      <p className="font-semibold text-accent-foreground">
+                                        Horários comuns
+                                      </p>
+                                      <p>
+                                        {schedule.hoursCommon.length > 0
+                                          ? schedule.hoursCommon
+                                              .map((h) => `${h}h`)
+                                              .join(", ")
+                                          : "—"}
+                                      </p>
+                                      {schedule.isClosingDays && (
+                                        <>
+                                          <p className="font-semibold text-accent-foreground pt-1">
+                                            Dias de fechamento
+                                          </p>
+                                          <p>
+                                            {schedule.closingDays.join(", ")}
+                                          </p>
+                                          <p className="font-semibold text-accent-foreground pt-1">
+                                            Horários de fechamento
+                                          </p>
+                                          <p>
+                                            {schedule.hoursClosingDays
+                                              .map((h) => `${h}h`)
+                                              .join(", ")}
+                                          </p>
+                                        </>
+                                      )}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                              })()}
+                            </td>
+
+                            {/* Erros */}
+                            <td className="p-4 hidden lg:table-cell">
+                              {report.errors ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-1.5 text-red-600 cursor-default w-fit">
+                                      <AlertTriangle className="w-3.5 h-3.5" />
+                                      <span className="text-[11px] font-medium">
+                                        Com erros
+                                      </span>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent
+                                    side="top"
+                                    className="p-0 w-80 border-slate-700 bg-slate-900"
+                                  >
+                                    <ScrollArea className="max-h-56 rounded-md">
+                                      <div className="p-1">
+                                        <JsonViewer value={report.errors} />
+                                      </div>
+                                    </ScrollArea>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                <span className="text-[11px] text-muted-foreground">
+                                  —
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Ações */}
+                            <td className="p-4 text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 border hover:bg-background"
+                                    disabled={
+                                      isBeingUpdated || isBeingRefreshed
+                                    }
+                                  >
+                                    {isBeingUpdated || isBeingRefreshed ? (
+                                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                    ) : (
+                                      <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                    )}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-52"
                                 >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Remover permanentemente
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      );
-                    })
+                                  <DropdownMenuLabel className="text-[9px] font-bold text-muted-foreground uppercase">
+                                    Opções
+                                  </DropdownMenuLabel>
+                                  <DropdownMenuItem
+                                    onClick={() => refreshDataset(report.id)}
+                                  >
+                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                    Atualizar dataset
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleOpenSchedule(report)}
+                                  >
+                                    <CalendarClock className="w-4 h-4 mr-2" />
+                                    Configurar agendamento
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => toggleReportActive(report)}
+                                    className={
+                                      report.isActive
+                                        ? "text-orange-600"
+                                        : "text-green-600"
+                                    }
+                                  >
+                                    <Ban className="w-4 h-4 mr-2" />
+                                    {report.isActive
+                                      ? "Desativar relatório"
+                                      : "Ativar relatório"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-red-600 focus:bg-destructive focus:text-accent-foreground"
+                                    onClick={() => handleOpenDelete(report)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Remover permanentemente
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
+                    </AnimatePresence>
                   )}
-                </tbody>
+                </motion.tbody>
               </table>
             </div>
           </div>

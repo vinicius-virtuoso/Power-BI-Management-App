@@ -2,7 +2,8 @@
 
 import { UserProps } from "@/core/domain/entities/user";
 import { useUserMeStore } from "@/core/store/users/userMeStore";
-import { handleGlobalError } from "@/presentation/utils/errorHandler"; // Importado
+import { handleGlobalError } from "@/presentation/utils/errorHandler";
+import { tableContainerVariants, tableRowVariants } from "@/shared/animations";
 import { cn } from "@/shared/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,7 +25,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-
 import { toast } from "sonner";
 import ShareReportsModal from "../components/ShareReportsModal";
 import { SortSelect, USER_SORT_OPTIONS } from "../components/SortSelect";
@@ -71,14 +71,12 @@ export default function UsersManagementScreen() {
   const [selectedUser, setSelectedUser] = useState<UserProps | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  // --- CARREGAMENTO INICIAL COM TRATAMENTO ---
   useEffect(() => {
     const load = async () => {
       try {
         await fetchUsers();
       } catch (error) {
         handleGlobalError(error);
-        // Se for 401, o handleGlobalError avisa, e você pode redirecionar se quiser
         if ((error as any).statusCode === 401) router.push("/login");
       }
     };
@@ -88,7 +86,6 @@ export default function UsersManagementScreen() {
   const filteredUsers = useMemo(() => {
     const usersList = Array.isArray(usersData?.users) ? usersData.users : [];
     if (!searchTerm) return usersList;
-
     const lowerSearch = searchTerm.toLowerCase();
     return usersList.filter(
       (u) =>
@@ -103,7 +100,6 @@ export default function UsersManagementScreen() {
     setSortKey,
   } = useSortedUsers(filteredUsers);
 
-  // --- HANDLERS ---
   const handleEdit = (user: UserProps) => {
     setSelectedUser(user);
     setIsModalOpen(true);
@@ -124,13 +120,11 @@ export default function UsersManagementScreen() {
 
   const confirmDelete = async () => {
     if (!selectedUser) return;
-
     if (selectedUser.id === loggedInUser?.id) {
       toast.error("Você não pode excluir sua própria conta.");
       setIsDeleteAlertOpen(false);
       return;
     }
-
     try {
       await userDelete(selectedUser.id);
       setIsDeleteAlertOpen(false);
@@ -140,9 +134,17 @@ export default function UsersManagementScreen() {
     }
   };
 
+  const formatterName = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (
+      parts[0].charAt(0) + parts[parts.length - 1].charAt(0)
+    ).toUpperCase();
+  };
+
   return (
     <>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync">
         <motion.section
           className="p-4 max-w-7xl mx-auto grid grid-rows-[auto_1fr] gap-4 h-full overflow-hidden"
           initial={{ opacity: 0, y: 10 }}
@@ -217,7 +219,14 @@ export default function UsersManagementScreen() {
                     <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+
+                {/* ── MUDANÇA 1: tbody → motion.tbody com variantes de stagger ── */}
+                <motion.tbody
+                  className="divide-y divide-border"
+                  variants={tableContainerVariants}
+                  initial="hidden"
+                  animate="show"
+                >
                   {isLoading ? (
                     <tr>
                       <td colSpan={6} className="h-64 text-center">
@@ -237,180 +246,195 @@ export default function UsersManagementScreen() {
                       </td>
                     </tr>
                   ) : (
-                    sortedUsers.map((u) => {
-                      const isMe = u.id === loggedInUser?.id;
+                    <AnimatePresence mode="sync" initial={false}>
+                      {sortedUsers.map((u) => {
+                        const isMe = u.id === loggedInUser?.id;
 
-                      return (
-                        <tr
-                          key={u.id}
-                          className={cn(
-                            "transition-colors group",
-                            isMe
-                              ? "bg-primary/5 hover:bg-primary/10"
-                              : "hover:bg-muted/20",
-                          )}
-                        >
-                          <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              <div
+                        return (
+                          <motion.tr
+                            key={u.id}
+                            variants={tableRowVariants}
+                            initial="hidden"
+                            animate="show"
+                            exit="exit"
+                            layout
+                            className={cn(
+                              "transition-colors group",
+                              isMe
+                                ? "bg-primary/5 hover:bg-primary/10 opacity-0"
+                                : "hover:bg-muted/20",
+                            )}
+                          >
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={cn(
+                                    "w-9 h-9 rounded-full flex items-center justify-center font-bold border shrink-0 text-xs",
+                                    isMe
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-muted text-muted-foreground border-border",
+                                  )}
+                                >
+                                  {formatterName(u.name)}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold truncate">
+                                      {u.name}
+                                    </span>
+                                    {isMe && (
+                                      <Badge className="h-4 px-1 text-[9px] bg-primary/20 text-primary border-none shadow-none">
+                                        Você
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <span className="text-[11px] text-muted-foreground truncate">
+                                    {u.email}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="p-4">
+                              <Badge
+                                variant={
+                                  u.role === "ADMIN" ? "default" : "secondary"
+                                }
+                                className="gap-1 shadow-none h-6 text-[10px]"
+                              >
+                                {u.role === "ADMIN" ? (
+                                  <ShieldCheck className="w-3 h-3" />
+                                ) : (
+                                  <User className="w-3 h-3" />
+                                )}
+                                {u.role === "ADMIN" ? "Admin" : "Padrão"}
+                              </Badge>
+                            </td>
+
+                            <td className="p-4">
+                              <Badge
+                                variant="outline"
                                 className={cn(
-                                  "w-9 h-9 rounded-full flex items-center justify-center font-bold border shrink-0 text-xs",
-                                  isMe
-                                    ? "bg-primary text-primary-foreground border-primary"
-                                    : "bg-muted text-muted-foreground border-border",
+                                  "gap-1.5 h-6 px-2 font-medium shadow-none text-[10px]",
+                                  u.isActive
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-red-50 text-red-700 border-red-200",
                                 )}
                               >
-                                {u.name.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold truncate">
-                                    {u.name}
-                                  </span>
-                                  {isMe && (
-                                    <Badge className="h-4 px-1 text-[9px] bg-primary/20 text-primary border-none shadow-none">
-                                      Você
-                                    </Badge>
-                                  )}
-                                </div>
-                                <span className="text-[11px] text-muted-foreground truncate">
-                                  {u.email}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="p-4">
-                            <Badge
-                              variant={
-                                u.role === "ADMIN" ? "default" : "secondary"
-                              }
-                              className="gap-1 shadow-none h-6 text-[10px]"
-                            >
-                              {u.role === "ADMIN" ? (
-                                <ShieldCheck className="w-3 h-3" />
-                              ) : (
-                                <User className="w-3 h-3" />
-                              )}
-                              {u.role === "ADMIN" ? "Admin" : "Padrão"}
-                            </Badge>
-                          </td>
-
-                          <td className="p-4">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "gap-1.5 h-6 px-2 font-medium shadow-none text-[10px]",
-                                u.isActive
-                                  ? "bg-green-50 text-green-700 border-green-200"
-                                  : "bg-red-50 text-red-700 border-red-200",
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  "w-1.5 h-1.5 rounded-full",
-                                  u.isActive
-                                    ? "bg-green-500 animate-pulse"
-                                    : "bg-red-500",
-                                )}
-                              />
-                              {u.isActive ? "Ativo" : "Inativo"}
-                            </Badge>
-                          </td>
-
-                          <td className="p-4 hidden md:table-cell text-muted-foreground text-xs italic">
-                            {format(new Date(u.createdAt), "dd/MM/yyyy", {
-                              locale: ptBR,
-                            })}
-                          </td>
-
-                          <td className="p-4 hidden lg:table-cell text-xs text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-3 h-3" />
-                              {u.lastAccess
-                                ? formatDistanceToNow(new Date(u.lastAccess), {
-                                    addSuffix: true,
-                                    locale: ptBR,
-                                  })
-                                : "Nunca"}
-                            </div>
-                          </td>
-
-                          <td className="p-4 text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 border hover:bg-background"
-                                >
-                                  <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-52">
-                                <DropdownMenuLabel className="text-[9px] font-bold text-muted-foreground uppercase">
-                                  Opções
-                                </DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleEdit(u)}>
-                                  <UserPen className="w-4 h-4 mr-2" /> Editar
-                                  Cadastro
-                                </DropdownMenuItem>
-
-                                {isMe || u.role === "ADMIN" ? (
-                                  <DropdownMenuItem disabled={true}>
-                                    <UserPen className="w-4 h-4 mr-2" />{" "}
-                                    Compartilhar Relatórios
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      setSelectedUser(u);
-                                      setIsShareModalOpen(true);
-                                    }}
-                                  >
-                                    <CircleFadingPlus className="w-4 h-4 mr-2" />{" "}
-                                    Compartilhar Relatórios
-                                  </DropdownMenuItem>
-                                )}
-
-                                <DropdownMenuItem
-                                  onClick={() => handleActivatedUser(u)}
-                                  disabled={isMe || isUpdating} // Adicione o isUpdating aqui
-                                  className={
+                                <span
+                                  className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
                                     u.isActive
-                                      ? "text-orange-600"
-                                      : "text-green-600"
-                                  }
-                                >
-                                  {isUpdating ? (
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                  ) : u.isActive ? (
-                                    <Ban className="w-4 h-4 mr-2" />
-                                  ) : (
-                                    <UserCheck className="w-4 h-4 mr-2" />
+                                      ? "bg-green-500 animate-pulse"
+                                      : "bg-red-500",
                                   )}
-                                  {u.isActive
-                                    ? "Desativar Acesso"
-                                    : "Ativar Acesso"}
-                                </DropdownMenuItem>
+                                />
+                                {u.isActive ? "Ativo" : "Inativo"}
+                              </Badge>
+                            </td>
 
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  disabled={isMe}
-                                  className="text-red-600 focus:bg-destructive focus:text-accent-foreground"
-                                  onClick={() => handleOpenDeleteAlert(u)}
+                            <td className="p-4 hidden md:table-cell text-muted-foreground text-xs italic">
+                              {format(new Date(u.createdAt), "dd/MM/yyyy", {
+                                locale: ptBR,
+                              })}
+                            </td>
+
+                            <td className="p-4 hidden lg:table-cell text-xs text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3 h-3" />
+                                {u.lastAccess
+                                  ? formatDistanceToNow(
+                                      new Date(u.lastAccess),
+                                      {
+                                        addSuffix: true,
+                                        locale: ptBR,
+                                      },
+                                    )
+                                  : "Nunca"}
+                              </div>
+                            </td>
+
+                            <td className="p-4 text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 border hover:bg-background"
+                                  >
+                                    <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-52"
                                 >
-                                  <Trash2 className="w-4 h-4 mr-2" /> Remover do
-                                  Sistema
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      );
-                    })
+                                  <DropdownMenuLabel className="text-[9px] font-bold text-muted-foreground uppercase">
+                                    Opções
+                                  </DropdownMenuLabel>
+                                  <DropdownMenuItem
+                                    onClick={() => handleEdit(u)}
+                                  >
+                                    <UserPen className="w-4 h-4 mr-2" /> Editar
+                                    Cadastro
+                                  </DropdownMenuItem>
+
+                                  {isMe || u.role === "ADMIN" ? (
+                                    <DropdownMenuItem disabled={true}>
+                                      <UserPen className="w-4 h-4 mr-2" />{" "}
+                                      Compartilhar Relatórios
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedUser(u);
+                                        setIsShareModalOpen(true);
+                                      }}
+                                    >
+                                      <CircleFadingPlus className="w-4 h-4 mr-2" />{" "}
+                                      Compartilhar Relatórios
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  <DropdownMenuItem
+                                    onClick={() => handleActivatedUser(u)}
+                                    disabled={isMe || isUpdating}
+                                    className={
+                                      u.isActive
+                                        ? "text-orange-600"
+                                        : "text-green-600"
+                                    }
+                                  >
+                                    {isUpdating ? (
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : u.isActive ? (
+                                      <Ban className="w-4 h-4 mr-2" />
+                                    ) : (
+                                      <UserCheck className="w-4 h-4 mr-2" />
+                                    )}
+                                    {u.isActive
+                                      ? "Desativar Acesso"
+                                      : "Ativar Acesso"}
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    disabled={isMe}
+                                    className="text-red-600 focus:bg-destructive focus:text-accent-foreground"
+                                    onClick={() => handleOpenDeleteAlert(u)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" /> Remover
+                                    do Sistema
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
+                    </AnimatePresence>
                   )}
-                </tbody>
+                </motion.tbody>
               </table>
             </div>
           </div>
