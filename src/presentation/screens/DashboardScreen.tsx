@@ -162,7 +162,7 @@ export function DashboardScreen() {
             initial={{ opacity: 0, scale: 0.99 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex gap-2 h-full w-full"
+            className="flex gap-2 h-full w-full bg-card"
           >
             <SidebarCustom
               selectedId={selectedReportId}

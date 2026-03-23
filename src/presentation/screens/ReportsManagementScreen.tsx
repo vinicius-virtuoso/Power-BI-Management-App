@@ -250,11 +250,11 @@ export default function ReportsManagementScreen() {
                   <tr className="text-[10px] uppercase tracking-wider font-bold">
                     <th className="p-4">Relatório</th>
                     <th className="p-4">Status</th>
-                    <th className="p-4 hidden md:table-cell">
+                    <th className="p-4 text-xs md:table-cell">
                       Última atualização
                     </th>
-                    <th className="p-4 hidden lg:table-cell">Agendamento</th>
-                    <th className="p-4 hidden lg:table-cell">Erros</th>
+                    <th className="p-4  text-x smd:table-cell">Agendamento</th>
+                    <th className="p-4 text-xs  md:table-cell">Erros</th>
                     <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
@@ -352,7 +352,7 @@ export default function ReportsManagementScreen() {
                             </td>
 
                             {/* Última atualização */}
-                            <td className="p-4 hidden md:table-cell text-xs text-muted-foreground">
+                            <td className="p-4 md:table-cell text-xs text-muted-foreground">
                               <div className="flex items-center gap-2">
                                 <Clock className="w-3 h-3 shrink-0" />
                                 {report.lastUpdate
@@ -368,7 +368,7 @@ export default function ReportsManagementScreen() {
                             </td>
 
                             {/* Agendamento */}
-                            <td className="p-4 hidden lg:table-cell">
+                            <td className="p-4 lg:table-cell">
                               {(() => {
                                 const schedule = scheduleMap[report.id];
                                 if (!schedule) {
@@ -437,7 +437,7 @@ export default function ReportsManagementScreen() {
                             </td>
 
                             {/* Erros */}
-                            <td className="p-4 hidden lg:table-cell">
+                            <td className="p-4 lg:table-cell">
                               {report.errors ? (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
