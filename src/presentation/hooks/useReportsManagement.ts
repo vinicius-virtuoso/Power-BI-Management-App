@@ -163,7 +163,7 @@ export function useReportsManagement() {
 
   const runPolling = useCallback(
     async (reportId: string, previousLastUpdate: Date | null | undefined) => {
-      const MAX_ATTEMPTS = 12;
+      const MAX_ATTEMPTS = 60;
       const INTERVAL_MS = 5000;
 
       try {
