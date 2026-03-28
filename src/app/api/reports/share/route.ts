@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const data = await apiFetch(`${process.env.API_URL}/reports/share`, {
+    const data = await apiFetch(`${process.env.API_URL}/user-reports/share`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

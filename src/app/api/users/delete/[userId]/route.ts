@@ -20,12 +20,15 @@ export async function DELETE(
   }
 
   try {
-    const data = await apiFetch(`${process.env.API_URL}/users/${userId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const data = await apiFetch(
+      `${process.env.API_URL}/users/remove/${userId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     return NextResponse.json(data);
   } catch (error: unknown) {

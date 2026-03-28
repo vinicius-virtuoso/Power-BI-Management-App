@@ -20,7 +20,7 @@ export async function GET(
 
   try {
     const data = await apiFetch(
-      `${process.env.API_URL}/reports/user/${userId}/reports`,
+      `${process.env.API_URL}/user-reports/user/${userId}/reports`,
       {
         method: "GET",
         headers: {

@@ -17,7 +17,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
 
-    await apiFetch(`${process.env.API_URL}/reports/revoke`, {
+    await apiFetch(`${process.env.API_URL}/user-reports/revoke`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,

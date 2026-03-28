@@ -250,11 +250,9 @@ export default function ReportsManagementScreen() {
                   <tr className="text-[10px] uppercase tracking-wider font-bold">
                     <th className="p-4">Relatório</th>
                     <th className="p-4">Status</th>
-                    <th className="p-4 text-xs md:table-cell">
-                      Última atualização
-                    </th>
-                    <th className="p-4  text-x smd:table-cell">Agendamento</th>
-                    <th className="p-4 text-xs  md:table-cell">Erros</th>
+                    <th className="p-4">Última atualização</th>
+                    <th className="p-4">Agendamento</th>
+                    <th className="p-4 ">Erros</th>
                     <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>

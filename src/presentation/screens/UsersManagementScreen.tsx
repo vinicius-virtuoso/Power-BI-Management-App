@@ -214,13 +214,12 @@ export default function UsersManagementScreen() {
                     <th className="p-4">Usuário</th>
                     <th className="p-4">Nível</th>
                     <th className="p-4">Status</th>
-                    <th className="p-4 hidden md:table-cell">Membro desde</th>
-                    <th className="p-4 hidden lg:table-cell">Último Acesso</th>
+                    <th className="p-4">Membro desde</th>
+                    <th className="p-4">Último Acesso</th>
                     <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
 
-                {/* ── MUDANÇA 1: tbody → motion.tbody com variantes de stagger ── */}
                 <motion.tbody
                   className="divide-y divide-border"
                   variants={tableContainerVariants}

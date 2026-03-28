@@ -20,7 +20,7 @@ export async function PATCH(
 
   try {
     const data = await apiFetch(
-      `${process.env.API_URL}/reports/deactivate/${reportId}`,
+      `${process.env.API_URL}/reports/report/deactivate/${reportId}`,
       { method: "PATCH", headers: { Authorization: `Bearer ${token}` } },
     );
     return NextResponse.json(data);

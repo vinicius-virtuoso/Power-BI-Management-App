@@ -31,9 +31,18 @@ import { Switch } from "./ui/switch";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const ALL_HOURS = Array.from({ length: 24 }, (_, i) =>
-  String(i).padStart(2, "0"),
-);
+const ALL_HOURS_COMMON = Array.from({ length: 24 }, (_, i) => {
+  const hour = i.toString().padStart(2, "0");
+  return `${hour}:00`;
+});
+
+const ALL_HOURS_CLOSING = Array.from({ length: 48 }, (_, i) => {
+  const hour = Math.floor(i / 2)
+    .toString()
+    .padStart(2, "0");
+  const min = i % 2 === 0 ? "00" : "30";
+  return `${hour}:${min}`;
+});
 
 // Dias 01-31 excluindo 07 (conforme enum ClosingDay do backend)
 const ALL_DAYS = [
@@ -259,6 +268,14 @@ export default function ScheduleReportModal({
         onSuccess,
       );
     } else {
+      console.log({
+        reportId: report.id,
+        hoursCommon: form.hoursCommon,
+        isClosingDays: form.isClosingDays,
+        closingDays: form.closingDays,
+        hoursClosingDays: form.hoursClosingDays,
+      });
+
       createSchedule(
         {
           reportId: report.id,
@@ -352,7 +369,7 @@ export default function ScheduleReportModal({
                   <ChipGroup
                     label="Horários de atualização (dias comuns)"
                     icon={Clock}
-                    items={ALL_HOURS}
+                    items={ALL_HOURS_COMMON}
                     selected={form.hoursCommon}
                     onToggle={toggleItem("hoursCommon")}
                     suffix="h"
@@ -398,7 +415,7 @@ export default function ScheduleReportModal({
                         <ChipGroup
                           label="Horários nos dias de fechamento"
                           icon={Clock}
-                          items={ALL_HOURS}
+                          items={ALL_HOURS_CLOSING}
                           selected={form.hoursClosingDays}
                           onToggle={toggleItem("hoursClosingDays")}
                           suffix="h"

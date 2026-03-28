@@ -22,7 +22,7 @@ export async function GET(
 
   try {
     const data = await apiFetch(
-      `${process.env.API_URL}/reports/report/${reportId}`,
+      `${process.env.API_URL}/user-reports/report/${reportId}`,
       { method: "GET", headers: { Authorization: `Bearer ${token}` } },
     );
     return NextResponse.json(data);
@@ -56,7 +56,7 @@ export async function DELETE(
   }
 
   try {
-    await apiFetch(`${process.env.API_URL}/reports/report/${reportId}`, {
+    await apiFetch(`${process.env.API_URL}/reports/report/remove/${reportId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
