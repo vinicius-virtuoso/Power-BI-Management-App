@@ -54,9 +54,9 @@ const ReportCard = ({
           tabIndex={0}
           onClick={() => onSelect(report)}
           onKeyDown={(e) => e.key === "Enter" && onSelect(report)}
-          className={`w-full text-left p-2 rounded-md transition-all duration-200 group relative cursor-pointer ${
+          className={`w-full text-left p-2 rounded-md transition-all duration-200 group relative cursor-pointer shadow-none ${
             isActive
-              ? "border border-primary/30 shadow-2xl bg-primary/20"
+              ? "border border-primary/15 shadow-2xl bg-primary/15"
               : "bg-secondary/80 border hover:border-border hover:bg-primary/10"
           }`}
         >

@@ -9,7 +9,7 @@ function ReportCardSkeleton({ index }: { index: number }) {
 
   return (
     <div
-      className="w-full p-2 rounded-md border bg-secondary/80"
+      className="w-full p-2 rounded-md border bg-secondary/80 shadow-none"
       style={{ opacity }}
     >
       <div className="flex items-start gap-3">
