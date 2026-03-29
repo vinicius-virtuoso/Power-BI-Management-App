@@ -294,7 +294,7 @@ export default function ScheduleReportModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="max-w-xl p-0 gap-0 overflow-hidden rounded-xl sm:max-w-md">
+        <DialogContent className="max-w-xl p-0 gap-0 overflow-hidden rounded-xl sm:max-w-xl">
           {/* ── Header ── */}
           <div className="px-6 pt-5 pb-4 border-b bg-linear-to-b from-muted/60 to-transparent">
             <DialogHeader>
