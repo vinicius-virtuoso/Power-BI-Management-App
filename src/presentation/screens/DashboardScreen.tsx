@@ -8,9 +8,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { MobileMenu } from "../components/MobileMenu";
 import ReportViewer from "../components/ReportViewer";
 import { SidebarCustom } from "../components/SidebarCustom";
-import { SidebarTrigger, useSidebar } from "../components/ui/sidebar";
+import { useSidebar } from "../components/ui/sidebar";
 
 export type ReportData = {
   id: string;
@@ -162,22 +163,33 @@ export function DashboardScreen() {
             initial={{ opacity: 0, scale: 0.99 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex gap-2 h-full w-full bg-card"
+            className="flex gap-2 h-full w-full bg-card relative"
           >
-            <SidebarCustom
-              selectedId={selectedReportId}
-              onSelect={(id) => setSelectedReportId(id)}
-              filteredReports={filteredReports}
-              isCollapsed={isCollapsed}
-              isLoadingReports={isLoadingReports}
-              search={search}
-              setSearch={setSearch}
-              toggleFavorite={toggleFavorite}
-            />
+            {/* Oculta a SidebarCustom padrão em telas menores (mobile) */}
+            <div className="hidden md:flex h-full">
+              <SidebarCustom
+                selectedId={selectedReportId}
+                onSelect={(id) => setSelectedReportId(id)}
+                filteredReports={filteredReports}
+                isCollapsed={isCollapsed}
+                isLoadingReports={isLoadingReports}
+                search={search}
+                setSearch={setSearch}
+                toggleFavorite={toggleFavorite}
+              />
+            </div>
 
-            <div className="flex flex-1 shadow-md w-full h-full overflow-hidden border bg-card -mr-6 relative">
-              <div className="absolute top-3 left-3 z-10 md:hidden">
-                <SidebarTrigger className="h-8 w-8 bg-card border shadow-sm rounded-md" />
+            <div className="flex flex-1 shadow-md w-full h-full overflow-hidden border bg-card relative">
+              <div className="absolute top-4 left-4 z-50 md:hidden">
+                <MobileMenu
+                  selectedId={selectedReportId}
+                  onSelect={(id) => setSelectedReportId(id)}
+                  search={search}
+                  setSearch={setSearch}
+                  isLoadingReports={isLoadingReports}
+                  filteredReports={filteredReports}
+                  toggleFavorite={toggleFavorite}
+                />
               </div>
 
               <ReportViewer
