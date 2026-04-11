@@ -26,8 +26,8 @@ export async function POST(request: Request) {
 
     cookieStore.set("session_token", data.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // Desativado até você ter um domínio e SSL configurados
+      sameSite: "lax", // Recomendo mudar para lax para evitar problemas de roteamento
       path: "/",
       maxAge: 60 * 60 * 24 * 3, // 3 dias
     });
