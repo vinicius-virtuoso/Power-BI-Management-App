@@ -67,7 +67,7 @@ export function MobileMenu({
         </SheetHeader>
 
         {/* BUSCA */}
-        <div className="p-4 border-b border-border">
+        <div className="p-2 border-b border-border">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -80,7 +80,7 @@ export function MobileMenu({
         </div>
 
         {/* CONTEÚDO (LISTA DE RELATÓRIOS) */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar">
+        <div className="flex-1 overflow-y-auto px-2 pb-2 pt-0 space-y-2 no-scrollbar">
           {isLoadingReports ? (
             <SidebarReportsSkeleton count={5} />
           ) : (
