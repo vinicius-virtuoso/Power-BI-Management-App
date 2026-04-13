@@ -142,7 +142,7 @@ const ReportViewer = ({ report, isFavorite }: ReportViewerProps) => {
 
   if (!report) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-muted/20 m-4 rounded-xl border-2 border-dashed text-center overflow-hidden">
+      <div className="pt-18 flex-1 flex items-center justify-center bg-muted/20 m-4 rounded-xl border-2 border-dashed text-center overflow-hidden">
         <div>
           <FileBarChart className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">
@@ -156,7 +156,7 @@ const ReportViewer = ({ report, isFavorite }: ReportViewerProps) => {
   const showLoader = isApiLoading || isRendering;
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
+    <div className="flex-1 flex flex-col h-full overflow-hidden pt-18 sm:pt-0">
       <AnimatePresence>
         {showTitle && (
           <motion.div
