@@ -17,6 +17,7 @@ const ReportEmbed = ({
   isVisible,
   onEmbedReady,
   onRendered,
+  onError,
 }: any) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { report: data, loadReport } = useReportDetails(reportId);
@@ -35,9 +36,12 @@ const ReportEmbed = ({
   }, [reportId, loadReport, data]);
 
   useEffect(() => {
+    const accessToken = data?.token || data?.accessToken;
+
     if (
       !containerRef.current ||
       !data?.embedUrl ||
+      !accessToken ||
       embedded ||
       isInitializingPBI.current
     )
@@ -46,50 +50,61 @@ const ReportEmbed = ({
     let powerbiInstance: any;
 
     const initEmbed = async () => {
-      isInitializingPBI.current = true;
-      const pbi = await import("powerbi-client");
-      const powerbi = new pbi.service.Service(
-        pbi.factories.hpmFactory,
-        pbi.factories.wpmpFactory,
-        pbi.factories.routerFactory,
-      );
-      powerbiInstance = powerbi;
+      try {
+        isInitializingPBI.current = true;
+        const pbi = await import("powerbi-client");
+        const powerbi = new pbi.service.Service(
+          pbi.factories.hpmFactory,
+          pbi.factories.wpmpFactory,
+          pbi.factories.routerFactory,
+        );
+        powerbiInstance = powerbi;
 
-      const config = {
-        type: "report",
-        tokenType: pbi.models.TokenType.Embed,
-        accessToken: data.token,
-        embedUrl: data.embedUrl,
-        uniqueId: data.externalId || data.id,
-        permissions: pbi.models.Permissions.All,
-        viewMode: pbi.models.ViewMode.View,
-        settings: {
-          filterPaneEnabled: false,
-          navContentPaneEnabled: true,
-          layoutType: pbi.models.LayoutType.Custom,
-          customLayout: {
-            displayOption: pbi.models.DisplayOption.FitToPage,
-          },
-          panes: {
-            filters: {
-              visible: false,
+        const config = {
+          type: "report",
+          tokenType: pbi.models.TokenType.Embed,
+          accessToken,
+          embedUrl: data.embedUrl,
+          uniqueId: data.externalId || data.id,
+          permissions: pbi.models.Permissions.All,
+          viewMode: pbi.models.ViewMode.View,
+          settings: {
+            filterPaneEnabled: false,
+            navContentPaneEnabled: true,
+            layoutType: pbi.models.LayoutType.Custom,
+            customLayout: {
+              displayOption: pbi.models.DisplayOption.FitToPage,
             },
-            pageNavigation: {
-              visible: true,
+            panes: {
+              filters: {
+                visible: false,
+              },
+              pageNavigation: {
+                visible: true,
+              },
+            },
+            bars: {
+              statusBar: {
+                visible: false,
+              },
             },
           },
-          bars: {
-            statusBar: {
-              visible: false,
-            },
-          },
-        },
-      };
+        };
 
-      const embed = powerbi.embed(containerRef.current!, config);
-      embed.on("rendered", () => onRendered());
-      onEmbedReady(reportId, embed);
-      setEmbedded(true);
+        const embed = powerbi.embed(containerRef.current!, config);
+        embed.on("rendered", () => onRendered());
+        embed.on("error", (event: any) => {
+          console.error("Power BI embed error:", event?.detail || event);
+          onError?.();
+        });
+        onEmbedReady(reportId, embed);
+        setEmbedded(true);
+      } catch (error) {
+        console.error("Power BI initialization error:", error);
+        onError?.();
+      } finally {
+        isInitializingPBI.current = false;
+      }
     };
 
     initEmbed();
@@ -100,6 +115,7 @@ const ReportEmbed = ({
       if (powerbiInstance && containerRef.current) {
         powerbiInstance.reset(containerRef.current);
       }
+      isInitializingPBI.current = false;
     };
   }, [data, reportId]);
 
@@ -124,6 +140,10 @@ const ReportViewer = ({ report, isFavorite }: ReportViewerProps) => {
   }, []);
 
   const handleRendered = useCallback(() => {
+    setIsRendering(false);
+  }, []);
+
+  const handleEmbedError = useCallback(() => {
     setIsRendering(false);
   }, []);
 
@@ -203,6 +223,7 @@ const ReportViewer = ({ report, isFavorite }: ReportViewerProps) => {
           isVisible={true}
           onEmbedReady={handleEmbedReady}
           onRendered={handleRendered}
+          onError={handleEmbedError}
         />
       </div>
     </div>
